@@ -49,7 +49,7 @@ This issue is especially prominent in rural and indigenous communities that lack
 
 | Role | Team Member | Key Responsibilities |
 |----|----|----|
-| Frontend Lead | **John M Vijay** | Next.js UI, routing, API integration, responsive design |
+| Frontend Lead | **Yashuwant John M Vijay** | Next.js UI, routing, API integration, responsive design |
 | Backend Lead | **Konetisetty Venkateswara** | API design, authentication, business logic, DB integration |
 | Cloud + Integration Lead | **Naorem Nganthoiba Singh** | AWS/Azure deployment, CI/CD, integration |
 
