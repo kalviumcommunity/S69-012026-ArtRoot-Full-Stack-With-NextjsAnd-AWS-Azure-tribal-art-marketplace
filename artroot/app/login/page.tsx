@@ -3,38 +3,28 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SignupPage() {
+export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
+        throw new Error(data.error || 'Login failed');
       }
 
       localStorage.setItem('token', data.token);
@@ -51,8 +41,8 @@ export default function SignupPage() {
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-amber-900">🎨 ArtRoot</h1>
-          <h2 className="text-2xl font-semibold text-gray-800 mt-4">Create Account</h2>
-          <p className="text-gray-600 mt-2">Join our tribal art community</p>
+          <h2 className="text-2xl font-semibold text-gray-800 mt-4">Welcome Back</h2>
+          <p className="text-gray-600 mt-2">Login to your account</p>
         </div>
 
         {error && (
@@ -62,17 +52,6 @@ export default function SignupPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Full Name</label>
-            <input
-              type="text"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-          </div>
-
           <div>
             <label className="block text-gray-700 font-medium mb-2">Email</label>
             <input
@@ -89,21 +68,9 @@ export default function SignupPage() {
             <input
               type="password"
               required
-              minLength={6}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Confirm Password</label>
-            <input
-              type="password"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
             />
           </div>
 
@@ -112,14 +79,14 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition disabled:opacity-50"
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
         <p className="text-center text-gray-600 mt-6">
-          Already have an account?{' '}
-          <Link href="/login" className="text-amber-600 font-semibold hover:text-amber-700">
-            Login
+          Don't have an account?{' '}
+          <Link href="/signup" className="text-amber-600 font-semibold hover:text-amber-700">
+            Sign up
           </Link>
         </p>
 
