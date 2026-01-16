@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyPassword, generateToken } from '@/lib/auth';
+import { verifyPassword, generateToken, loginSchema } from '@/lib/auth';
+import { ZodError } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
 
-    // Validate input
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-    }
+    // Validate input with Zod
+    const { email, password } = loginSchema.parse(body);
 
     // TODO: Fetch user from database
     // For now, simulating a stored user
@@ -36,6 +35,9 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
