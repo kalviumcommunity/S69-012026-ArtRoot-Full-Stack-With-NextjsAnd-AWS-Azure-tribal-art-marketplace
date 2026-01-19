@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { sendSuccess, sendError } from '@/lib/responseHandler';
+import { ERROR_CODES } from '@/lib/errorCodes';
 
 // Mock database - in production, replace with actual database
 let users = [
@@ -33,20 +34,16 @@ export async function GET(req: Request) {
     const endIndex = startIndex + limit;
     const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
-    return NextResponse.json({
-      success: true,
+    return sendSuccess({
       page,
       limit,
       total: filteredUsers.length,
       totalPages: Math.ceil(filteredUsers.length / limit),
       data: paginatedUsers,
-    });
+    }, 'Users retrieved successfully');
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
-      { status: 500 }
-    );
-  }
+      { sucsendError('Failed to fetch users', ERROR_CODES.OPERATION_FAILED, 500
 }
 
 /**
@@ -62,36 +59,24 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: name, email, role' },
         { status: 400 }
-      );
+      );sendError('Missing required fields: name, email, role', ERROR_CODES.MISSING_REQUIRED_FIELDS, 400);
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(data.email)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid email format' },
-        { status: 400 }
-      );
+      return sendError('Invalid email format', ERROR_CODES.INVALID_EMAIL, 400);
     }
 
     // Role validation
     if (!['buyer', 'artist', 'admin'].includes(data.role.toLowerCase())) {
-      return NextResponse.json(
-        { success: false, error: 'Role must be buyer, artist, or admin' },
-        { status: 400 }
-      );
+      return sendError('Role must be buyer, artist, or admin', ERROR_CODES.INVALID_ROLE, 400);
     }
 
     // Check for duplicate email
     const existingUser = users.find(u => u.email === data.email);
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: 'User with this email already exists' },
-        { status: 409 }
-      );
-    }
-
-    const newUser = {
+      return sendError('User with this email already exists', ERROR_CODES.EMAIL_ALREADY_EXISTS, 409nst newUser = {
       id: users.length + 1,
       name: data.name,
       email: data.email,
@@ -101,14 +86,8 @@ export async function POST(req: Request) {
 
     users.push(newUser);
 
-    return NextResponse.json(
-      { success: true, message: 'User created successfully', data: newUser },
-      { status: 201 }
-    );
+    return sendSuccess(newUser, 'User created successfully', 201);
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Failed to create user' },
-      { status: 500 }
-    );
+    return sendError('Failed to create user', ERROR_CODES.OPERATION_FAILED, 500);
   }
 }
