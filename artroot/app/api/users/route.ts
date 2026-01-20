@@ -1,5 +1,18 @@
-import { sendSuccess, sendError } from '@/lib/responseHandler';
-import { ERROR_CODES } from '@/lib/errorCodes';
+import { NextRequest, NextResponse } from 'next/server';
+
+/**
+ * Users Route Handler
+ * 
+ * Route: GET/POST /api/users
+ * 
+ * Access Control:
+ * - Required Role: "user" or "admin" (any authenticated user)
+ * - Enforced by: app/middleware.ts
+ * 
+ * This route is protected by the RBAC middleware.
+ * Any user with a valid JWT (regardless of role) can access this endpoint.
+ * The middleware validates the JWT and confirms the role is recognized before forwarding.
+ */
 
 // Mock database - in production, replace with actual database
 let users = [
@@ -8,24 +21,24 @@ let users = [
   { id: 3, name: 'Ramesh Kumar', email: 'ramesh@artroot.com', role: 'artist', createdAt: '2026-01-10' },
 ];
 
-/**
- * GET /api/users
- * Get all users with pagination
- * Query params: page, limit, role
- */
-export async function GET(req: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
+    // Extract authenticated user info from headers (set by middleware)
+    const userEmail = request.headers.get('x-user-email');
+    const userRole = request.headers.get('x-user-role');
+    const userId = request.headers.get('x-user-id');
+
+    const { searchParams } = new URL(request.url);
     const page = Number(searchParams.get('page')) || 1;
     const limit = Number(searchParams.get('limit')) || 10;
-    const role = searchParams.get('role');
+    const roleFilter = searchParams.get('role');
 
     // Filter users
     let filteredUsers = [...users];
     
-    if (role) {
+    if (roleFilter) {
       filteredUsers = filteredUsers.filter(
-        user => user.role.toLowerCase() === role.toLowerCase()
+        user => user.role.toLowerCase() === roleFilter.toLowerCase()
       );
     }
 
@@ -34,60 +47,59 @@ export async function GET(req: Request) {
     const endIndex = startIndex + limit;
     const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
-    return sendSuccess({
-      page,
-      limit,
-      total: filteredUsers.length,
-      totalPages: Math.ceil(filteredUsers.length / limit),
-      data: paginatedUsers,
-    }, 'Users retrieved successfully');
+    return NextResponse.json({
+      success: true,
+      message: 'User route accessible to all authenticated users.',
+      requestedBy: {
+        email: userEmail,
+        role: userRole,
+      },
+      data: {
+        page,
+        limit,
+        total: filteredUsers.length,
+        totalPages: Math.ceil(filteredUsers.length / limit),
+        users: paginatedUsers,
+      },
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { sucsendError('Failed to fetch users', ERROR_CODES.OPERATION_FAILED, 500
+      { success: false, error: 'Failed to fetch users' },
+      { status: 500 }
+    );
+  }
 }
 
-/**
- * POST /api/users
- * Create a new user
- */
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const data = await req.json();
-    
-    // Validation
-    if (!data.name || !data.email || !data.role) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields: name, email, role' },
-        { status: 400 }
-      );sendError('Missing required fields: name, email, role', ERROR_CODES.MISSING_REQUIRED_FIELDS, 400);
-    }
+    // Extract authenticated user info from headers (set by middleware)
+    const userEmail = request.headers.get('x-user-email');
+    const userRole = request.headers.get('x-user-role');
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-      return sendError('Invalid email format', ERROR_CODES.INVALID_EMAIL, 400);
-    }
+    const body = await request.json();
 
-    // Role validation
-    if (!['buyer', 'artist', 'admin'].includes(data.role.toLowerCase())) {
-      return sendError('Role must be buyer, artist, or admin', ERROR_CODES.INVALID_ROLE, 400);
-    }
-
-    // Check for duplicate email
-    const existingUser = users.find(u => u.email === data.email);
-    if (existingUser) {
-      return sendError('User with this email already exists', ERROR_CODES.EMAIL_ALREADY_EXISTS, 409nst newUser = {
-      id: users.length + 1,
-      name: data.name,
-      email: data.email,
-      role: data.role.toLowerCase(),
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-
-    users.push(newUser);
-
-    return sendSuccess(newUser, 'User created successfully', 201);
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'User operation completed successfully',
+        data: {
+          performedBy: {
+            email: userEmail,
+            role: userRole,
+          },
+          operation: body,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    return sendError('Failed to create user', ERROR_CODES.OPERATION_FAILED, 500);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Invalid request body',
+        message: 'Request body must be valid JSON',
+      },
+      { status: 400 }
+    );
   }
 }

@@ -25,14 +25,36 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return await bcrypt.compare(password, hashedPassword);
 }
 
-export function generateToken(userId: string, email: string): string {
-  return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: '7d' });
+/**
+ * Generates a JWT token with user info and role
+ * @param userId - Unique user identifier
+ * @param email - User email
+ * @param role - User role (admin | user)
+ * @returns Signed JWT token
+ */
+export function generateToken(userId: string, email: string, role: 'admin' | 'user' = 'user'): string {
+  return jwt.sign({ userId, email, role }, JWT_SECRET, { expiresIn: '7d' });
 }
 
+/**
+ * Verifies JWT token and returns decoded payload
+ * Returns null if token is invalid or expired
+ */
 export function verifyToken(token: string): any {
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Type definition for decoded JWT payload
+ */
+export interface JWTPayload {
+  userId: string;
+  email: string;
+  role: 'admin' | 'user';
+  iat: number;
+  exp: number;
 }
