@@ -5,6 +5,45 @@
 
 ---
 
+## Technical Architecture & Setup
+
+### Structure
+The project is split into two distinct services:
+- **Frontend (`artroot/`)**: Next.js 13+ application (App Router) running on port 3000.
+- **Backend (`backend/`)**: Express.js application running on port 5000.
+
+### Setup Instructions
+
+#### 1. Backend Setup
+```bash
+cd backend
+npm install
+npm run dev
+# Server runs at http://localhost:5000
+```
+
+#### 2. Frontend Setup
+```bash
+cd artroot
+npm install
+npm run dev
+# App runs at http://localhost:3000
+```
+
+### Environment Variables
+**Frontend (`artroot/.env.local`)**
+```
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
+
+**Backend (`backend/.env`)**
+```
+PORT=5000
+JWT_SECRET=your-secret-key
+```
+
+---
+
 ## 1. Problem Statement & Solution Overview
 
 ### Problem Statement
