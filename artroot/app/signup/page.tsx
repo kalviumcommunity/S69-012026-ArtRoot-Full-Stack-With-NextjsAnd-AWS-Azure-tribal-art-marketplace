@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/lib/api';
+import { User, Mail, Lock, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -21,7 +23,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -39,94 +41,130 @@ export default function SignupPage() {
 
       localStorage.setItem('token', data.token);
       router.push('/');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen bg-[url('https://images.unsplash.com/photo-1549887552-93f8efb4133f?q=80&w=2940&auto=format&fit=crop')] bg-cover bg-center flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+
+      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-amber-900">🎨 ArtRoot</h1>
-          <h2 className="text-2xl font-semibold text-gray-800 mt-4">Create Account</h2>
-          <p className="text-gray-600 mt-2">Join our tribal art community</p>
+          <div className="mx-auto w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-amber-600/30">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Join ArtRoot</h1>
+          <p className="text-gray-500 mt-2 font-medium">Connect with Tribal Art & Culture</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r mb-6 text-sm flex items-center">
+            <span className="mr-2">⚠️</span> {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Full Name</label>
-            <input
-              type="text"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Full Name</label>
+            <div className="relative group">
+              <User className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-amber-600 transition-colors" />
+              <input
+                type="text"
+                required
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-gray-900"
+                placeholder="John Doe"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Email</label>
-            <input
-              type="email"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Email Address</label>
+            <div className="relative group">
+              <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-amber-600 transition-colors" />
+              <input
+                type="email"
+                required
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-gray-900"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Password</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Confirm Password</label>
-            <input
-              type="password"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-amber-600 transition-colors" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-gray-900"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Confirm</label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-amber-600 transition-colors" />
+                <input
+                  type="password"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-gray-900"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition disabled:opacity-50"
+            className="w-full mt-2 bg-gradient-to-r from-amber-600 to-amber-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-amber-600/30 hover:shadow-amber-600/50 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                Creating Account...
+              </>
+            ) : (
+              <>
+                Sign Up
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-6">
-          Already have an account?{' '}
-          <Link href="/login" className="text-amber-600 font-semibold hover:text-amber-700">
-            Login
-          </Link>
-        </p>
-
-        <div className="mt-6 text-center">
-          <Link href="/" className="text-gray-600 hover:text-amber-600">
-            ← Back to Home
-          </Link>
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <p className="text-gray-600">
+            Already have an account?{' '}
+            <Link href="/login" className="text-amber-600 font-bold hover:text-amber-700 hover:underline transition-all">
+              Sign In
+            </Link>
+          </p>
+          <div className="mt-6">
+            <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors">
+              <span className="mr-1">←</span> Back to Gallery
+            </Link>
+          </div>
         </div>
       </div>
     </div>
