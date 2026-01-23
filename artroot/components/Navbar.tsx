@@ -23,7 +23,7 @@ export default function Navbar() {
                         <div className="bg-amber-600 p-2 rounded-lg group-hover:bg-amber-700 transition-colors">
                             <Palette className="w-6 h-6 text-white" />
                         </div>
-                        <span className={`text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-700 to-orange-600 ${!scrolled && 'text-white from-white to-amber-100'}`}>
+                        <span className={`text-2xl font-bold ${!scrolled ? 'text-white' : 'text-amber-700'}`}>
                             ArtRoot
                         </span>
                     </Link>
