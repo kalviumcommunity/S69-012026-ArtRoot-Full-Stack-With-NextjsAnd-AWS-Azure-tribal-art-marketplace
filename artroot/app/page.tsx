@@ -47,8 +47,8 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1549887552-93f8efb4133f?q=80&w=2940&auto=format&fit=crop')] bg-cover bg-center" />
+      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden bg-gray-900">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1564399579883-451a5d44e78e?q=80&w=3000&auto=format&fit=crop')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-black/50" />
 
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
@@ -161,7 +161,7 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="py-24 bg-gray-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-600/20 to-purple-600/20" />
+        <div className="absolute inset-0 bg-amber-600/20" />
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
           <h2 className="text-4xl font-bold text-white mb-6">Ready to start your collection?</h2>
           <p className="text-xl text-gray-300 mb-10">

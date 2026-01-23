@@ -17,9 +17,9 @@ interface ArtworkProps {
 export default function ArtworkCard({ artwork }: ArtworkProps) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-            <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+            <div className="relative aspect-4/3 bg-gray-100 overflow-hidden">
                 {/* Placeholder for actual image */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-amber-100 to-orange-50 flex items-center justify-center text-amber-900/20 font-serif text-4xl">
+                <div className="absolute inset-0 bg-amber-50 flex items-center justify-center text-amber-900/20 font-serif text-4xl">
                     {artwork.tribe} Art
                 </div>
                 <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
