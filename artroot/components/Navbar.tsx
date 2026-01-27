@@ -1,11 +1,20 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Menu, X, LogIn, UserPlus, Palette } from 'lucide-react';
+import { Menu, X, LogIn, UserPlus, Palette, LogOut } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+    const { user, logout, isAuthenticated } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -41,14 +50,48 @@ export default function Navbar() {
                         </Link>
 
                         <div className="flex items-center space-x-4 pl-4 border-l border-gray-200/20">
-                            <Link href="/login" className={`flex items-center px-4 py-2 rounded-full font-medium transition-all ${scrolled ? 'text-gray-700 hover:text-amber-600 hover:bg-amber-50' : 'text-white hover:bg-white/10'}`}>
-                                <LogIn className="w-4 h-4 mr-2" />
-                                Login
-                            </Link>
-                            <Link href="/signup" className={`flex items-center px-4 py-2 rounded-full font-medium transition-all shadow-lg shadow-amber-600/20 ${scrolled ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-white text-amber-900 hover:bg-amber-50'}`}>
-                                <UserPlus className="w-4 h-4 mr-2" />
-                                Sign Up
-                            </Link>
+                            {!isMounted ? (
+                                <>
+                                    <Link href="/login" className={`flex items-center px-4 py-2 rounded-full font-medium transition-all ${scrolled ? 'text-gray-700 hover:text-amber-600 hover:bg-amber-50' : 'text-white hover:bg-white/10'}`}>
+                                        <LogIn className="w-4 h-4 mr-2" />
+                                        Login
+                                    </Link>
+                                    <Link href="/signup" className={`flex items-center px-4 py-2 rounded-full font-medium transition-all shadow-lg shadow-amber-600/20 ${scrolled ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-white text-amber-900 hover:bg-amber-50'}`}>
+                                        <UserPlus className="w-4 h-4 mr-2" />
+                                        Sign Up
+                                    </Link>
+                                </>
+                            ) : isAuthenticated && user ? (
+                                <>
+                                    <div className={`text-sm font-medium ${scrolled ? 'text-gray-700' : 'text-white'}`}>
+                                        <p>{user.email}</p>
+                                        <p className={`text-xs ${scrolled ? 'text-gray-600' : 'text-white/70'}`}>
+                                            {user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'User'}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            router.push('/');
+                                        }}
+                                        className={`flex items-center px-4 py-2 rounded-full font-medium transition-all ${scrolled ? 'text-gray-700 hover:text-red-600 hover:bg-red-50' : 'text-white hover:bg-white/10'}`}
+                                    >
+                                        <LogOut className="w-4 h-4 mr-2" />
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href="/login" className={`flex items-center px-4 py-2 rounded-full font-medium transition-all ${scrolled ? 'text-gray-700 hover:text-amber-600 hover:bg-amber-50' : 'text-white hover:bg-white/10'}`}>
+                                        <LogIn className="w-4 h-4 mr-2" />
+                                        Login
+                                    </Link>
+                                    <Link href="/signup" className={`flex items-center px-4 py-2 rounded-full font-medium transition-all shadow-lg shadow-amber-600/20 ${scrolled ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-white text-amber-900 hover:bg-amber-50'}`}>
+                                        <UserPlus className="w-4 h-4 mr-2" />
+                                        Sign Up
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
 

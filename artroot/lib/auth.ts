@@ -1,9 +1,5 @@
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
-const SALT_ROUNDS = 10;
+import { Role } from './rbac';
 
 // Shared Zod validation schemas
 export const loginSchema = z.object({
@@ -15,34 +11,18 @@ export const signupSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['artist', 'viewer']).optional(),
 });
 
-export async function hashPassword(password: string): Promise<string> {
-  return await bcrypt.hash(password, SALT_ROUNDS);
-}
-
-export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-  return await bcrypt.compare(password, hashedPassword);
-}
-
 /**
- * Generates a JWT token with user info and role
- * @param userId - Unique user identifier
- * @param email - User email
- * @param role - User role (admin | user)
- * @returns Signed JWT token
+ * Decodes JWT token without verification (client-side only)
+ * For actual verification, the backend should validate the token
  */
-export function generateToken(userId: string, email: string, role: 'admin' | 'user' = 'user'): string {
-  return jwt.sign({ userId, email, role }, JWT_SECRET, { expiresIn: '7d' });
-}
-
-/**
- * Verifies JWT token and returns decoded payload
- * Returns null if token is invalid or expired
- */
-export function verifyToken(token: string): any {
+export function decodeToken(token: string): any {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    // Simple base64 decode of JWT payload (not secure verification)
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
   } catch (error) {
     return null;
   }
@@ -54,7 +34,29 @@ export function verifyToken(token: string): any {
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'admin' | 'user';
+  role: Role;
   iat: number;
   exp: number;
+}
+
+// Get user session from localStorage
+export function getUserSession(): JWTPayload | null {
+  if (typeof window === 'undefined') return null;
+  
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  
+  return decodeToken(token);
+}
+
+// Save user session to localStorage
+export function saveUserSession(token: string) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('token', token);
+}
+
+// Clear user session
+export function clearUserSession() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('token');
 }
