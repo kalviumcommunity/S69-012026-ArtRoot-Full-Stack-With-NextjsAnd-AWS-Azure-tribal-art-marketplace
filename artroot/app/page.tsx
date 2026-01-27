@@ -28,12 +28,17 @@ export default function Home() {
     const fetchArtworks = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/artworks`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         if (data.success) {
           setArtworks(data.data.slice(0, 3)); // Show top 3 featured artworks
         }
       } catch (error) {
         console.error('Failed to fetch artworks', error);
+        // Set empty array on error so page still renders
+        setArtworks([]);
       } finally {
         setLoading(false);
       }
