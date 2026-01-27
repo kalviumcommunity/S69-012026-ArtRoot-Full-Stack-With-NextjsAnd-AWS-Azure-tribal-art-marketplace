@@ -1,12 +1,29 @@
 import express from 'express';
 import { ZodError } from 'zod';
 import { signupSchema, loginSchema, hashPassword, verifyPassword, generateToken } from '../utils/auth';
+import { Role, isValidRole } from '../config/roles';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 
 router.post('/signup', async (req, res) => {
     try {
         const { name, email, password } = signupSchema.parse(req.body);
+        const requestedRole = req.body.role as string;
+
+        // Default role is 'viewer', can be 'artist' if specified
+        // Admin role cannot be self-assigned, must be set manually
+        let role: Role = 'viewer';
+        if (requestedRole === 'artist') {
+            role = 'artist';
+        } else if (requestedRole === 'admin') {
+            // Prevent self-assignment of admin role
+            logger.security('AUTH', `Attempted admin self-assignment by ${email}`);
+            return res.status(403).json({ 
+                error: 'Admin role cannot be self-assigned',
+                code: 'ROLE_FORBIDDEN'
+            });
+        }
 
         // Hash password
         const hashedPassword = await hashPassword(password);
@@ -15,18 +32,21 @@ router.post('/signup', async (req, res) => {
         // Mock user ID
         const userId = Date.now().toString();
 
-        const token = generateToken(userId, email);
+        const token = generateToken(userId, email, role);
+
+        logger.info('AUTH', `User registered: ${email} with role ${role}`);
 
         res.status(201).json({
             message: 'User created successfully',
             token,
-            user: { id: userId, name, email }
+            user: { id: userId, name, email, role }
         });
     } catch (error) {
         if (error instanceof ZodError) {
             res.status(400).json({ error: error.issues[0].message });
             return;
         }
+        logger.error('AUTH', 'Signup error', { error });
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -35,51 +55,43 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = loginSchema.parse(req.body);
 
-        // Mock user lookup
-        const storedUser = {
+        // Mock user lookup - In production, query database
+        // Assign roles based on email for demo purposes
+        let role: Role = 'viewer';
+        if (email.includes('admin')) {
+            role = 'admin';
+        } else if (email.includes('artist')) {
+            role = 'artist';
+        }
+
+        interface StoredUser {
+            id: string;
+            email: string;
+            password: string;
+            name: string;
+            role: Role;
+        }
+
+        const storedUser: StoredUser = {
             id: '123',
             email: email,
             password: '$2b$10$example', // Needs real hash in production
             name: 'Test User',
-            role: email.includes('admin') ? ('admin' as const) : ('user' as const),
+            role: role,
         };
 
-        // For demo purposes, we will rely on verifyPassword failing if hash is invalid
-        // But since we use a fake hash here, we must be careful.
-        // In real app, we fetch usage from DB.
-        // Here we will just simulate success if password is "password" for demo, or actually use the verifyPassword if we had a real hash.
-        // However, since we can't easily generate a real hash without running code, let's use a known hash or just skip verification for the mock if needed.
-        // BUT the requirement says "mock auth logic", so let's stick to the ported logic.
-        // The previous Next.js code had `password: '$2b$10$example'`. bcrypt.compare will fail against this unless 'example' is the salt/hash.
-        // Let's create a real hash for "password" using the hashPassword function if we were running it, but we are writing code.
-        // I will mock the verification to return true for demo purposes if we can't get a valid hash, 
-        // OR effectively, let's just use the `verifyPassword` and assume the storedUser has a valid hash.
-        // Wait, the Next.js code had:
-        // `const isValid = await verifyPassword(password, storedUser.password);`
-        // And `storedUser.password` was `'$2b$10$example'`.
-        // Unless the user types a password that hashes to that, it will fail.
-        // I will change the mock to always succeed for "password" or similar, or just allow any password for the mock if the hash check fails (for dev convenience).
-        // Actually, let's just make the mock user password a hash of "password123".
-        // $2b$10$3euPcmQFCiblsZeEu5s7p.9OVHHYH.CNiq./l.S.W/8zZ.Q.8.D.a is hash for "password123"
-
-        // Changing stored mock password to a hash of 'password123' (just an example, or use a simple check).
-        // Better yet, for the mock, let's just allow login if `verifyPassword` implementation is standard.
-        // I'll stick to the original logic, but maybe update the mock hash or add a note.
-
-        // Let's duplicate the Next.js logic exactly for now.
-
-        // Verify password
-        // const isValid = await verifyPassword(password, storedUser.password);
-
-        // Since I don't have the hash for the previous mock, I'll simulate it:
-        const isValid = true; // FORCE SUCCESS FOR DEMO as we don't have the hash for '$2b$10$example'
+        // FORCE SUCCESS FOR DEMO as we don't have the hash for '$2b$10$example'
+        const isValid = true;
 
         if (!isValid) {
+            logger.warn('AUTH', `Failed login attempt for ${email}`);
             res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
             return;
         }
 
         const token = generateToken(storedUser.id, storedUser.email, storedUser.role);
+
+        logger.info('AUTH', `User logged in: ${email} with role ${role}`);
 
         res.status(200).json({
             message: 'Login successful',
@@ -97,6 +109,7 @@ router.post('/login', async (req, res) => {
             res.status(400).json({ error: error.issues[0].message, code: 'VALIDATION_FAILED' });
             return;
         }
+        logger.error('AUTH', 'Login error', { error });
         res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_SERVER_ERROR' });
     }
 });
