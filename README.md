@@ -609,5 +609,196 @@ All paginated responses include:
 
 ---
 
+## Role-Based Access Control (RBAC)
+
+### Overview
+ArtRoot implements a comprehensive Role-Based Access Control system to ensure users only access resources they're authorized to. This security model assigns permissions based on user roles rather than individual identities, making it scalable and maintainable.
+
+### Role Hierarchy
+
+| Role | Permissions | Description |
+|------|-------------|-------------|
+| **Admin** | create, read, update, delete, manage_users | Full system access including user management |
+| **Artist** | create, read, update | Can create and manage own artworks |
+| **Viewer** | read | Read-only access to public content |
+
+### Permission Matrix
+
+| Action | Admin | Artist | Viewer |
+|--------|-------|--------|--------|
+| View artworks | ✓ | ✓ | ✓ |
+| Create artwork | ✓ | ✓ | ✗ |
+| Update own artwork | ✓ | ✓ | ✗ |
+| Update any artwork | ✓ | ✗ | ✗ |
+| Delete own artwork | ✓ | ✗ | ✗ |
+| Delete any artwork | ✓ | ✗ | ✗ |
+| Verify artwork | ✓ | ✗ | ✗ |
+| Manage users | ✓ | ✗ | ✗ |
+
+### Implementation Details
+
+#### Backend RBAC
+**Location**: `backend/src/config/roles.ts`, `backend/src/middleware/rbac.ts`
+
+**Key Features**:
+1. **Centralized Role Configuration**: All roles and permissions defined in one place
+2. **JWT-Based Authentication**: User role embedded in JWT token
+3. **Permission Middleware**: Reusable middleware checks permissions before allowing access
+4. **Ownership Verification**: Artists can only modify their own artworks, admin can modify any
+5. **Audit Logging**: All RBAC decisions logged with timestamp, user, and result
+
+**Example Usage**:
+```typescript
+// Protect route requiring 'create' permission
+router.post('/artworks', 
+  authenticateToken, 
+  requirePermission('create'), 
+  createArtworkHandler
+);
+
+// Protect route requiring ownership or admin role
+router.put('/artworks/:id',
+  authenticateToken,
+  requirePermission('update'),
+  requireOwnershipOrAdmin(getArtworkOwnerId),
+  updateArtworkHandler
+);
+```
+
+#### Frontend RBAC
+**Location**: `artroot/lib/rbac.ts`, `artroot/components/Protected.tsx`
+
+**Key Features**:
+1. **Role-Based UI Rendering**: Components conditionally render based on user permissions
+2. **Permission Hooks**: React hooks for checking permissions in components
+3. **Protected Components**: Wrapper components hide/show content based on roles
+4. **AuthProvider Context**: Global authentication state management
+
+**Example Usage**:
+```tsx
+// Conditionally render based on permission
+<Protected requirePermission="create">
+  <button>Create Artwork</button>
+</Protected>
+
+// Conditionally render based on role
+<Protected requireRole={['admin', 'artist']}>
+  <EditButton />
+</Protected>
+
+// Check ownership
+<RequireOwnership resourceOwnerId={artwork.artistId}>
+  <DeleteButton />
+</RequireOwnership>
+```
+
+### Security Features
+
+#### 1. Role Assignment
+- **Default Role**: New users assigned 'viewer' role by default
+- **Artist Role**: Users can request 'artist' role during signup
+- **Admin Role**: Cannot be self-assigned; must be set manually for security
+- **Attempted Privilege Escalation**: Logged as security event
+
+#### 2. Token-Based Authentication
+- **JWT Tokens**: Include userId, email, and role
+- **7-Day Expiration**: Tokens expire after 7 days
+- **Stateless Verification**: No server-side session storage required
+- **Frontend Storage**: Tokens stored in localStorage
+
+#### 3. Multi-Layer Protection
+- **API Layer**: All sensitive endpoints protected with middleware
+- **Business Logic**: Ownership checks before modifying resources
+- **UI Layer**: Conditional rendering prevents unauthorized UI access
+- **Database Layer**: (Future) Row-level security policies
+
+#### 4. Audit Trail
+All RBAC decisions logged with:
+- Timestamp (ISO 8601 format)
+- User ID and role
+- Requested permission
+- Resource path
+- Decision (ALLOWED/DENIED)
+
+**Example Log Output**:
+```
+[RBAC] 2026-01-27T10:15:30.123Z | User: 123 | Role: artist | Permission: create | Resource: /api/artworks | Status: ALLOWED
+[RBAC] 2026-01-27T10:16:45.456Z | User: 456 | Role: viewer | Permission: delete | Resource: /api/artworks/5 | Status: DENIED
+```
+
+### Testing RBAC
+
+#### Test Script
+Run `test-rbac.ps1` to verify RBAC implementation:
+```powershell
+cd S69-012026-ArtRoot-Full-Stack-With-NextjsAnd-AWS-Azure-tribal-art-marketplace
+./test-rbac.ps1
+```
+
+#### Test Coverage
+1. **Artist Signup**: Verify artist role assignment
+2. **Viewer Signup**: Verify viewer role assignment  
+3. **Admin Login**: Verify admin role from email pattern
+4. **Artist Create**: ALLOWED - Artist creates artwork
+5. **Viewer Create**: DENIED - Viewer blocked from creating
+6. **Viewer Read**: ALLOWED - Viewer can read artworks
+7. **Artist Update Own**: ALLOWED - Artist updates own artwork
+8. **Viewer Update**: DENIED - Viewer blocked from updating
+9. **Admin Delete**: ALLOWED - Admin deletes any artwork
+10. **Admin Self-Assignment**: DENIED - Prevents privilege escalation
+
+### Scalability Considerations
+
+#### Current Design Benefits
+1. **Simple Role Model**: Three clear roles easy to understand and maintain
+2. **Centralized Configuration**: Single source of truth for permissions
+3. **Reusable Middleware**: Same permission checks across all routes
+4. **Consistent Logging**: Standardized audit trail format
+
+#### Future Enhancements
+For more complex systems, consider:
+
+1. **Policy-Based Access Control (PBAC)**
+   - Evaluate permissions based on attributes (time, location, resource state)
+   - Example: "Artists can update artworks only before they're sold"
+
+2. **Resource-Level Permissions**
+   - Fine-grained permissions per resource type
+   - Example: Separate permissions for "artwork.price.update" vs "artwork.description.update"
+
+3. **Permission Inheritance**
+   - Hierarchical roles where higher roles inherit lower permissions
+   - Example: "Senior Artist" inherits all "Artist" permissions plus extras
+
+4. **Dynamic Role Assignment**
+   - Users can have multiple roles based on context
+   - Example: User is "Viewer" by default but "Artist" for their own listings
+
+5. **External Authorization Service**
+   - Centralized auth service for microservices architecture
+   - Tools: Open Policy Agent (OPA), AWS IAM, Azure RBAC
+
+### Reflection
+
+#### What Worked Well
+- **Separation of Concerns**: RBAC logic separate from business logic
+- **Type Safety**: TypeScript enforces role and permission types
+- **Reusability**: Same RBAC logic works for all protected resources
+- **Transparency**: Audit logs provide clear visibility into access decisions
+
+#### Challenges Addressed
+- **Ownership Verification**: Implemented middleware to check resource ownership
+- **Admin Privilege Abuse**: Prevented self-assignment of admin role
+- **Consistent Enforcement**: Both frontend and backend enforce same rules
+- **Developer Experience**: Simple API makes it easy to protect new routes
+
+#### Lessons Learned
+1. **Start Simple**: Three roles cover most use cases; more complexity can be added later
+2. **Log Everything**: Audit trail crucial for debugging and security analysis
+3. **Fail Secure**: Default to denying access when in doubt
+4. **Frontend is Not Security**: Backend must always verify permissions; UI is convenience only
+
+---
+
 ## 13. Conclusion
 ArtRoot empowers tribal and rural artists by providing direct digital access to global buyers. This 4-week sprint delivers a clean, scalable MVP that highlights transparency, fairness, and cultural preservation.
