@@ -18,6 +18,7 @@ interface Artwork {
   description: string;
   available: boolean;
   verified: boolean;
+  image?: string;
 }
 
 export default function Home() {
@@ -33,7 +34,16 @@ export default function Home() {
         }
         const data = await response.json();
         if (data.success) {
-          setArtworks(data.data.slice(0, 3)); // Show top 3 featured artworks
+          // Add sample images to artworks if they don't have them
+          const artworksWithImages = data.data.slice(0, 3).map((artwork: Artwork, index: number) => ({
+            ...artwork,
+            image: artwork.image || [
+              'https://images.unsplash.com/photo-1578321272176-b02c7eeda237?q=80&w=1000&auto=format&fit=crop',
+              'https://images.unsplash.com/photo-1577720643272-265f434e0f4f?q=80&w=1000&auto=format&fit=crop',
+              'https://images.unsplash.com/photo-1579783902614-e3fb5141b0cb?q=80&w=1000&auto=format&fit=crop'
+            ][index]
+          }));
+          setArtworks(artworksWithImages);
         }
       } catch (error) {
         console.error('Failed to fetch artworks', error);
