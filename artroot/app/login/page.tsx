@@ -1,138 +1,243 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowRight, Lock, Mail, Loader2, Eye, EyeOff, LogIn } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
-import { Mail, Lock, ArrowRight, Loader2, LogIn } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [loginType, setLoginType] = useState<'password' | 'otp'>('password');
+  const [step, setStep] = useState<'email' | 'otp'>('email');
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '', otp: '' });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ email: formData.email, password: formData.password })
       });
+      const data = await res.json();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      localStorage.setItem('token', data.token);
-      router.push('/');
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.dispatchEvent(new Event('auth-change'));
+        router.push('/');
       } else {
-        setError('An unexpected error occurred');
+        setError(data.error || 'Invalid credentials');
       }
+    } catch (err) {
+      setError('Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/otp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+      if (res.ok) {
+        setStep('otp');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to send OTP');
+      }
+    } catch (err) {
+      setError('Connection failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, otp: formData.otp })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.dispatchEvent(new Event('auth-change'));
+        router.push('/');
+      } else {
+        setError(data.error || 'Invalid Code');
+      }
+    } catch (err) {
+      setError('Connection failed.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[url('https://images.unsplash.com/photo-1549887552-93f8efb4133f?q=80&w=2940&auto=format&fit=crop')] bg-cover bg-center flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+    <div className="min-h-screen bg-[#E6E1DC] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Elements matching Tribal Theme */}
+      <div className="absolute top-0 left-0 w-64 h-64 bg-[#C9A24D]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#D2691E]/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
 
-      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20">
-        <div className="text-center mb-8">
-          <div className="mx-auto w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-amber-600/30">
-            <LogIn className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome Back</h1>
-          <p className="text-gray-500 mt-2 font-medium">Original Tribal Art Marketplace</p>
+      <div className="w-full max-w-md relative z-10">
+        <div className="text-center mb-10">
+          <h1 className="font-serif text-4xl font-bold text-[#2B2B2B] mb-2">
+            ART<span className="text-[#D2691E]">ROOT</span>
+          </h1>
+          <p className="font-sans text-[#2B2B2B]/60 text-sm tracking-widest uppercase">
+            {loginType === 'password' ? 'Member Login' : 'Magic Link Access'}
+          </p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r mb-6 text-sm flex items-center">
-            <span className="mr-2">⚠️</span> {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Email Address</label>
-            <div className="relative group">
-              <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-amber-600 transition-colors" />
-              <input
-                type="email"
-                required
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-gray-900"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
+        <div className="bg-white/50 backdrop-blur-sm border border-white/60 p-8 shadow-sm">
+          {/* Toggle */}
+          <div className="flex border-b border-[#2B2B2B]/10 mb-8">
+            <button
+              onClick={() => { setLoginType('password'); setError(''); }}
+              className={`flex-1 pb-4 text-xs font-sans uppercase tracking-widest transition-colors ${loginType === 'password' ? 'text-[#D2691E] border-b-2 border-[#D2691E]' : 'text-[#2B2B2B]/40 hover:text-[#2B2B2B]'}`}
+            >
+              Password
+            </button>
+            <button
+              onClick={() => { setLoginType('otp'); setError(''); setStep('email'); }}
+              className={`flex-1 pb-4 text-xs font-sans uppercase tracking-widest transition-colors ${loginType === 'otp' ? 'text-[#D2691E] border-b-2 border-[#D2691E]' : 'text-[#2B2B2B]/40 hover:text-[#2B2B2B]'}`}
+            >
+              One-Time Code
+            </button>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Password</label>
-            <div className="relative group">
-              <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-amber-600 transition-colors" />
-              <input
-                type="password"
-                required
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-gray-900"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
-            </div>
-          </div>
+          {loginType === 'password' ? (
+            <form onSubmit={handlePasswordLogin} className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-sans uppercase tracking-widest text-[#2B2B2B]/60 mb-2">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-[#E6E1DC]/30 border-b border-[#2B2B2B]/20 outline-none focus:border-[#D2691E] transition-colors font-sans text-[#2B2B2B] placeholder-[#2B2B2B]/30"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-sans uppercase tracking-widest text-[#2B2B2B]/60 mb-2">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-[#E6E1DC]/30 border-b border-[#2B2B2B]/20 outline-none focus:border-[#D2691E] transition-colors font-sans text-[#2B2B2B] placeholder-[#2B2B2B]/30"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2B2B2B]/40 hover:text-[#D2691E]"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center space-x-2 text-gray-600 cursor-pointer">
-              <input type="checkbox" className="rounded text-amber-600 focus:ring-amber-500 border-gray-300" />
-              <span>Remember me</span>
-            </label>
-            <a href="#" className="text-amber-600 hover:text-amber-700 font-semibold hover:underline">
-              Forgot password?
-            </a>
-          </div>
+              {error && <div className="text-red-500 text-xs text-center border border-red-200 bg-red-50 p-2">{error}</div>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-amber-600/30 hover:shadow-amber-600/50 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Signing in...
-              </>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#2B2B2B] hover:bg-[#D2691E] text-white font-sans uppercase tracking-widest text-xs py-4 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Log In'}
+              </button>
+            </form>
+          ) : (
+            step === 'email' ? (
+              <form onSubmit={handleSendOTP} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-sans uppercase tracking-widest text-[#2B2B2B]/60 mb-2">Email for Code</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-[#E6E1DC]/30 border-b border-[#2B2B2B]/20 outline-none focus:border-[#D2691E] transition-colors font-sans text-[#2B2B2B] placeholder-[#2B2B2B]/30"
+                    placeholder="name@example.com"
+                  />
+                </div>
+                {error && <div className="text-red-500 text-xs text-center border border-red-200 bg-red-50 p-2">{error}</div>}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#2B2B2B] hover:bg-[#D2691E] text-white font-sans uppercase tracking-widest text-xs py-4 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Code'}
+                </button>
+              </form>
             ) : (
-              <>
-                Sign In
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </>
-            )}
-          </button>
-        </form>
+              <form onSubmit={handleVerifyOTP} className="space-y-6">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-sans uppercase tracking-widest text-[#2B2B2B]/60">Enter Code</label>
+                    <button type="button" onClick={() => setStep('email')} className="text-[10px] text-[#D2691E] hover:underline">Change Email</button>
+                  </div>
+                  <input
+                    type="text"
+                    name="otp"
+                    required
+                    value={formData.otp}
+                    onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#E6E1DC]/30 border-b border-[#2B2B2B]/20 outline-none focus:border-[#D2691E] transition-colors font-sans text-[#2B2B2B] text-center tracking-[0.5em] text-lg"
+                    placeholder="000000"
+                  />
+                </div>
+                {error && <div className="text-red-500 text-xs text-center border border-red-200 bg-red-50 p-2">{error}</div>}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#2B2B2B] hover:bg-[#D2691E] text-white font-sans uppercase tracking-widest text-xs py-4 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'verify & enter'}
+                </button>
+              </form>
+            )
+          )}
+        </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/signup" className="text-amber-600 font-bold hover:text-amber-700 hover:underline transition-all">
-              Create Account
+        <div className="mt-8 text-center">
+          <p className="text-xs text-[#2B2B2B]/60">
+            New to ArtRoot?{' '}
+            <Link href="/signup" className="text-[#D2691E] border-b border-[#D2691E] pb-0.5 hover:opacity-80 transition-opacity">
+              Create an Account
             </Link>
           </p>
-          <div className="mt-6">
-            <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors">
-              <span className="mr-1">←</span> Back to Gallery
-            </Link>
-          </div>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 interface ApiResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
   error?: string;
   timestamp: string;
 }
@@ -15,7 +15,7 @@ interface ApiResponse {
  * @param status - HTTP status code (default: 200)
  */
 export function sendSuccess(
-  data?: any,
+  data?: unknown,
   message: string = 'Success',
   status: number = 200
 ): NextResponse<ApiResponse> {

@@ -20,19 +20,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    // Load user from token on mount
-    const session = getUserSession();
-    if (session) {
-      setUser({
-        userId: session.userId,
-        email: session.email,
-        role: session.role,
-      });
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const session = getUserSession();
+      if (session) {
+        return {
+          userId: session.userId,
+          email: session.email,
+          role: session.role,
+        };
+      }
     }
-  }, []);
+    return null;
+  });
 
   const login = (token: string) => {
     localStorage.setItem('token', token);
