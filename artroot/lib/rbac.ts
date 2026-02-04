@@ -5,7 +5,7 @@ export type Permission = 'create' | 'read' | 'update' | 'delete' | 'manage_users
 // Role permissions mapping (same as backend)
 export const rolePermissions: Record<Role, Permission[]> = {
   admin: ['create', 'read', 'update', 'delete', 'manage_users'],
-  artist: ['create', 'read', 'update'],
+  artist: ['create', 'read', 'update', 'delete'],
   viewer: ['read'],
 };
 
@@ -17,15 +17,15 @@ export function hasPermission(role: Role | undefined, permission: Permission): b
 
 // Check if user can perform an action on a resource
 export function canModifyResource(
-  userRole: Role | undefined, 
-  userId: string | undefined, 
+  userRole: Role | undefined,
+  userId: string | undefined,
   resourceOwnerId: string
 ): boolean {
   if (!userRole || !userId) return false;
-  
+
   // Admin can modify anything
   if (userRole === 'admin') return true;
-  
+
   // User can only modify their own resources
   return userId === resourceOwnerId;
 }

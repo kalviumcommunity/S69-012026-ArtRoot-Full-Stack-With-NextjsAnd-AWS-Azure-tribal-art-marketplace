@@ -1,26 +1,58 @@
 @import "tailwindcss";
 
+@theme {
+  --font-heading: var(--font-playfair);
+  --font-sans: var(--font-inter);
+
+  --color-charcoal: #2B2B2B;
+  --color-clay: #8B5A2B;
+  --color-orange: #D2691E;
+  --color-warm-gray: #E6E1DC;
+  --color-soft-gold: #C9A24D;
+
+  --color-background: var(--color-warm-gray);
+  --color-foreground: var(--color-charcoal);
+  --color-primary: var(--color-orange);
+  --color-secondary: var(--color-clay);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #E6E1DC;
+  --foreground: #2B2B2B;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+/* Force Hide Clerk Social Buttons */
+.cl-socialButtonsBlockButton,
+.cl-dividerRow {
+  display: none !important;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+  white-space: nowrap;
 }

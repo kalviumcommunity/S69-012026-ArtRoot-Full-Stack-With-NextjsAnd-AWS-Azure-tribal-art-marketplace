@@ -18,12 +18,12 @@ export const signupSchema = z.object({
  * Decodes JWT token without verification (client-side only)
  * For actual verification, the backend should validate the token
  */
-export function decodeToken(token: string): any {
+export function decodeToken(token: string): JWTPayload | null {
   try {
     // Simple base64 decode of JWT payload (not secure verification)
     const payload = token.split('.')[1];
     return JSON.parse(atob(payload));
-  } catch (error) {
+  } catch (_) {
     return null;
   }
 }
@@ -42,10 +42,10 @@ export interface JWTPayload {
 // Get user session from localStorage
 export function getUserSession(): JWTPayload | null {
   if (typeof window === 'undefined') return null;
-  
+
   const token = localStorage.getItem('token');
   if (!token) return null;
-  
+
   return decodeToken(token);
 }
 

@@ -1,5 +1,8 @@
-import { Share2, Heart } from 'lucide-react';
+import { Share2, Heart, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useCart } from '@/contexts/CartContext';
+import { useState } from 'react';
 
 interface ArtworkProps {
     artwork: {
@@ -17,6 +20,23 @@ interface ArtworkProps {
 }
 
 export default function ArtworkCard({ artwork }: ArtworkProps) {
+    const { addToCart } = useCart();
+    const [isAddedToCart, setIsAddedToCart] = useState(false);
+
+    const handleAddToCart = () => {
+        addToCart({
+            artworkId: artwork.id,
+            title: artwork.title,
+            artistName: artwork.artistName,
+            price: artwork.price,
+            image: artwork.image,
+            tribe: artwork.tribe,
+            available: artwork.available
+        });
+        setIsAddedToCart(true);
+        setTimeout(() => setIsAddedToCart(false), 2000);
+    };
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
             <div className="relative aspect-4/3 bg-gray-100 overflow-hidden">
@@ -35,7 +55,31 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
                     </div>
                 )}
                 <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 bg-white/90 backdrop-blur rounded-full text-gray-700 hover:text-amber-600 shadow-sm">
+                    <button
+                        onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                                const token = localStorage.getItem('token');
+                                if (!token) {
+                                    alert('Please login to favorite artworks');
+                                    return;
+                                }
+                                await fetch('/api/favorites', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ artworkId: artwork.id })
+                                });
+                                alert('Added to favorites!');
+                            } catch (err) {
+                                console.error('Failed to favorite:', err);
+                            }
+                        }}
+                        className="p-2 bg-white/90 backdrop-blur rounded-full text-gray-700 hover:text-amber-600 shadow-sm"
+                    >
                         <Heart className="w-4 h-4" />
                     </button>
                     <button className="p-2 bg-white/90 backdrop-blur rounded-full text-gray-700 hover:text-amber-600 shadow-sm">
@@ -60,14 +104,25 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
 
                 <p className="text-sm text-gray-500 mb-4">{artwork.medium} • {artwork.size}</p>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-700">{artwork.artistName}</span>
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100 gap-2">
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0"></div>
+                        <span className="text-sm font-medium text-gray-700 truncate">{artwork.artistName}</span>
                     </div>
-                    <button className="text-amber-600 text-sm font-semibold hover:text-amber-700">
-                        View Details
-                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        {artwork.available && (
+                            <button
+                                onClick={handleAddToCart}
+                                className={`p-2 rounded-full transition-all ${isAddedToCart ? 'bg-green-500 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
+                                title="Add to cart"
+                            >
+                                <ShoppingCart className="w-4 h-4" />
+                            </button>
+                        )}
+                        <Link href={`/artworks/${artwork.id}`} className="text-amber-600 text-sm font-semibold hover:text-amber-700">
+                            View
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

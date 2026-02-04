@@ -1,11 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ArtworkCard from '@/components/ArtworkCard';
 import { API_BASE_URL } from '@/lib/api';
-import { ArrowRight, Sparkles, Globe, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Sparkles, Globe, ShieldCheck, Palette, Users } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { getUserSession } from '@/lib/auth';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 interface Artwork {
   id: number;
@@ -22,170 +25,196 @@ interface Artwork {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Parallax ref removed to fix hydration error
+
+
+  useEffect(() => {
+    const session = getUserSession();
+    if (session) {
+      // Optional: Redirect or just show home
+    }
+  }, [router]);
 
   useEffect(() => {
     const fetchArtworks = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/artworks`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error('Failed');
         const data = await response.json();
         if (data.success) {
-          // Add sample images to artworks if they don't have them
-          const artworksWithImages = data.data.slice(0, 3).map((artwork: Artwork, index: number) => ({
-            ...artwork,
-            image: artwork.image || [
-              'https://images.unsplash.com/photo-1578321272176-b02c7eeda237?q=80&w=1000&auto=format&fit=crop',
-              'https://images.unsplash.com/photo-1577720643272-265f434e0f4f?q=80&w=1000&auto=format&fit=crop',
-              'https://images.unsplash.com/photo-1579783902614-e3fb5141b0cb?q=80&w=1000&auto=format&fit=crop'
-            ][index]
+          // Add sample images if missing
+          const artWithImages = data.data.slice(0, 4).map((a: Artwork, i: number) => ({
+            ...a,
+            image: a.image || [
+              'https://images.unsplash.com/photo-1628194481358-034870c97800?q=80&w=2940&auto=format&fit=crop', // Warli
+              'https://images.unsplash.com/photo-1596521575012-7067882200dc?q=80&w=2940&auto=format&fit=crop', // Gond
+              'https://images.unsplash.com/photo-1605330364372-74cda112701d?q=80&w=2940&auto=format&fit=crop', // Madhubani
+              'https://images.unsplash.com/photo-1549887552-93f8efb4133f?q=80&w=2940&auto=format&fit=crop'
+            ][i]
           }));
-          setArtworks(artworksWithImages);
+          setArtworks(artWithImages);
         }
-      } catch (error) {
-        console.error('Failed to fetch artworks', error);
-        // Set empty array on error so page still renders
-        setArtworks([]);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchArtworks();
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#E6E1DC] text-[#2B2B2B] overflow-x-hidden selection:bg-[#D2691E] selection:text-white">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden bg-gray-900">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1564399579883-451a5d44e78e?q=80&w=3000&auto=format&fit=crop')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-black/50" />
+      {/* 1. Hero Section - Minimalist & Bold */}
+      <section className="relative min-h-screen flex items-center justify-center pt-20 px-6 overflow-hidden">
+        {/* Abstract Background Shapes */}
+        <div className="absolute top-20 right-[-10%] w-[600px] h-[600px] bg-[#C9A24D]/10 rounded-full blur-[100px] -z-10" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#D2691E]/10 rounded-full blur-[100px] -z-10" />
 
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <div className="inline-flex items-center bg-amber-500/20 backdrop-blur-md border border-amber-500/30 rounded-full px-4 py-1.5 mb-8">
-            <Sparkles className="w-4 h-4 text-amber-400 mr-2" />
-            <span className="text-amber-100 font-medium text-sm tracking-wide uppercase">Introducing ArtRoot</span>
-          </div>
+        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            Discover the Soul of <span className="text-amber-500">Tribal Art</span>
-          </h1>
-
-          <p className="text-xl text-gray-200 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Directly connect with rural artists. Own authentic masterpieces. Preserve cultural heritage.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-            <Link href="#artworks" className="px-8 py-4 bg-amber-600 hover:bg-amber-700 text-white rounded-full font-bold text-lg transition-all shadow-lg shadow-amber-600/30 flex items-center">
-              Explore Gallery
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link href="/signup" className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/30 backdrop-blur-md rounded-full font-bold text-lg transition-all">
-              Join as Artist
-            </Link>
-          </div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-8 h-12 border-2 border-white/30 rounded-full flex justify-center pt-2">
-            <div className="w-1 h-3 bg-white rounded-full" />
-          </div>
-        </div>
-      </section>
-
-      {/* Mission Section */}
-      <section id="mission" className="py-24 bg-amber-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why ArtRoot?</h2>
-            <div className="w-20 h-1 bg-amber-600 mx-auto rounded-full" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Globe className="w-8 h-8 text-amber-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Direct to Artist</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Eliminating middlemen to ensure 100% of the fair value goes directly to the creators and their communities.
-              </p>
+          {/* Text Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#2B2B2B]/10 bg-white/30 backdrop-blur-sm">
+              <div className="w-2 h-2 rounded-full bg-[#D2691E]" />
+              <span className="text-xs font-sans uppercase tracking-widest text-[#2B2B2B]/70">Curated Tribal Marketplace</span>
             </div>
 
-            <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <ShieldCheck className="w-8 h-8 text-amber-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Authentic & Verified</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Every artwork is verified for authenticity, ensuring you receive genuine traditional masterpieces.
-              </p>
-            </div>
+            <h1 className="font-serif text-6xl md:text-8xl leading-[0.9] font-bold text-[#2B2B2B]">
+              Raw <br />
+              <span className="italic text-[#D2691E]">Origins</span> <br />
+              Timeless <br />
+              Art.
+            </h1>
 
-            <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Sparkles className="w-8 h-8 text-amber-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Cultural Preservation</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Supporting these art forms helps preserve ancient traditions and stories for future generations.
-              </p>
+            <p className="font-sans text-lg text-[#2B2B2B]/70 max-w-md leading-relaxed border-l-2 border-[#D2691E] pl-6">
+              Experience the unadulterated beauty of indigenous Indian art. Directly sourced from the hands that tell the oldest stories.
+            </p>
+
+            <div className="flex flex-wrap gap-4 pt-4">
+              <Link href="/artworks" className="group relative px-8 py-4 bg-[#2B2B2B] text-white overflow-hidden rounded-full font-sans uppercase text-sm tracking-widest hover:shadow-xl transition-all">
+                <span className="relative z-10 flex items-center">Start Collecting <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" /></span>
+                <div className="absolute inset-0 bg-[#D2691E] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
+              </Link>
+              <Link href="#mission" className="px-8 py-4 border border-[#2B2B2B]/20 rounded-full font-sans uppercase text-sm tracking-widest hover:bg-[#2B2B2B] hover:text-white transition-all">
+                Our Philosophy
+              </Link>
             </div>
-          </div>
+          </motion.div>
+
+          {/* Hero Image / Collage */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="relative h-[600px] w-full hidden lg:block"
+          >
+            <div className="absolute top-10 right-10 w-80 h-[500px] bg-white p-2 shadow-2xl rotate-3 z-20">
+              <img src="https://images.unsplash.com/photo-1628194481358-034870c97800?q=80&w=2940&auto=format&fit=crop" alt="Warli Art" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+            </div>
+            <div className="absolute top-20 left-20 w-80 h-[450px] bg-white p-2 shadow-xl -rotate-6 z-10">
+              <img src="https://images.unsplash.com/photo-1596521575012-7067882200dc?q=80&w=2940&auto=format&fit=crop" alt="Gond Art" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+            </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#D2691E] rounded-full mix-blend-multiply blur-2xl animate-pulse" />
+          </motion.div>
+
         </div>
       </section>
 
-      {/* Featured Artworks Section */}
-      <section id="artworks" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Featured Masterpieces</h2>
-              <p className="text-gray-600">Handpicked selections from across India</p>
-            </div>
-            <Link href="/artworks" className="hidden md:flex items-center text-amber-600 font-semibold hover:text-amber-700">
-              View All <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {artworks.map((artwork) => (
-                <ArtworkCard key={artwork.id} artwork={artwork} />
-              ))}
-            </div>
-          )}
-
-          <div className="mt-12 text-center md:hidden">
-            <Link href="/artworks" className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-full text-gray-700 font-medium hover:bg-gray-50">
-              View All Gallery
-            </Link>
-          </div>
+      {/* 2. Scrolling Marquee / Manifesto */}
+      <div className="bg-[#2B2B2B] py-8 overflow-hidden whitespace-nowrap">
+        <div className="inline-block animate-marquee">
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8 italic opacity-50">Preserving Culture</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8">•</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8 italic opacity-50">Empowering Artists</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8">•</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8 italic opacity-50">Authentic & Verified</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8">•</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8 italic opacity-50">Preserving Culture</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8">•</span>
+          <span className="text-4xl md:text-6xl font-serif text-[#E6E1DC] mx-8 italic opacity-50">Empowering Artists</span>
         </div>
-      </section>
+      </div>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-gray-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-amber-600/20" />
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-4xl font-bold text-white mb-6">Ready to start your collection?</h2>
-          <p className="text-xl text-gray-300 mb-10">
-            Join thousands of art lovers and support tribal communities directly.
-          </p>
-          <Link href="/signup" className="inline-block px-8 py-4 bg-white text-gray-900 rounded-full font-bold text-lg hover:bg-gray-100 transition-colors">
-            Get Started Now
+      {/* 3. Featured Collection */}
+      <section className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+          <div>
+            <h3 className="font-sans text-xs uppercase tracking-widest text-[#D2691E] mb-2">Curated Selection</h3>
+            <h2 className="font-serif text-4xl md:text-5xl text-[#2B2B2B]">Featured Masterpieces</h2>
+          </div>
+          <Link href="/artworks" className="group flex items-center font-sans uppercase text-xs tracking-widest border-b border-[#2B2B2B] pb-1 hover:text-[#D2691E] hover:border-[#D2691E] transition-colors">
+            View All Collection <ArrowRight className="ml-2 w-4 h-4 group-hover:ml-3 transition-all" />
           </Link>
         </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map(i => <div key={i} className="h-96 bg-[#2B2B2B]/5 animate-pulse rounded-2xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {artworks.map((artwork, i) => (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                key={artwork.id}
+              >
+                <ArtworkCard artwork={artwork} />
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 4. Why We Exist (Values) */}
+      <section id="mission" className="py-24 bg-[#Dcd7d2] px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="space-y-4 p-8 border border-[#2B2B2B]/5 hover:border-[#D2691E]/50 transition-colors bg-[#E6E1DC]">
+            <Users className="w-10 h-10 text-[#D2691E]" />
+            <h3 className="font-serif text-2xl">Artist First</h3>
+            <p className="font-sans text-[#2B2B2B]/70 leading-relaxed text-sm">
+              We eliminate middlemen. You buy directly from authenticated tribal artists, ensuring 100% fair compensation.
+            </p>
+          </div>
+          <div className="space-y-4 p-8 border border-[#2B2B2B]/5 hover:border-[#D2691E]/50 transition-colors bg-[#E6E1DC]">
+            <ShieldCheck className="w-10 h-10 text-[#D2691E]" />
+            <h3 className="font-serif text-2xl">Verified Authenticity</h3>
+            <p className="font-sans text-[#2B2B2B]/70 leading-relaxed text-sm">
+              Every piece comes with a blockchain-verified certificate of authenticity, tracking its origin back to the village.
+            </p>
+          </div>
+          <div className="space-y-4 p-8 border border-[#2B2B2B]/5 hover:border-[#D2691E]/50 transition-colors bg-[#E6E1DC]">
+            <Globe className="w-10 h-10 text-[#D2691E]" />
+            <h3 className="font-serif text-2xl">Global Heritage</h3>
+            <p className="font-sans text-[#2B2B2B]/70 leading-relaxed text-sm">
+              Preserving dying art forms by giving them a global platform. Your purchase helps sustain ancient traditions.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Minimal CTA */}
+      <section className="py-32 text-center px-6">
+        <h2 className="font-serif text-5xl md:text-7xl text-[#2B2B2B] mb-8">
+          Own a piece of <br /> <span className="italic text-[#D2691E]">History.</span>
+        </h2>
+        <Link href="/signup" className="inline-block px-12 py-5 bg-[#D2691E] text-white font-sans uppercase text-sm tracking-widest rounded-full hover:bg-[#b05516] transition-colors">
+          Join the Application
+        </Link>
       </section>
 
       <Footer />
