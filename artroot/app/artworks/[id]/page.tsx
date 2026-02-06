@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface Artwork {
   id: number;
+  artist_id: number;
   title: string;
   price: number;
   description: string;
@@ -155,7 +156,7 @@ export default function ArtworkDetail() {
               {artwork.title}
             </h1>
 
-            <Link href={`/artists/${artwork.artist_name}`} className="font-sans text-[#D2691E] text-sm uppercase tracking-wide mb-8 hover:text-[#C9A24D] transition-colors w-fit">
+            <Link href={`/artists/${artwork.artist_id}`} className="font-sans text-[#D2691E] text-sm uppercase tracking-wide mb-8 hover:text-[#C9A24D] transition-colors w-fit">
               By {artwork.artist_name}
             </Link>
 

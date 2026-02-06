@@ -3,7 +3,7 @@
 export interface LogEntry {
     timestamp: string;
     level: 'INFO' | 'WARN' | 'ERROR' | 'SECURITY';
-    category: 'AUTH' | 'RBAC' | 'API' | 'DATABASE' | 'MIGRATION' | 'BREVO';
+    category: 'AUTH' | 'RBAC' | 'API' | 'DATABASE' | 'MIGRATION' | 'BREVO' | 'CHAT';
     message: string;
     metadata?: Record<string, any>;
 }

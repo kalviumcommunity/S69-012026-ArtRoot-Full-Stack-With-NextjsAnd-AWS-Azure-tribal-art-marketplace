@@ -5,7 +5,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getUserSession } from '@/lib/auth';
 import { API_BASE_URL } from '@/lib/api';
-import { Package, Heart, User, PlusCircle, Palette, DollarSign, TrendingUp, Trash2 } from 'lucide-react';
+import {
+  User, LogOut, Package, Heart, LayoutDashboard,
+  PlusCircle, Trash2, Palette, Clock, MapPin,
+  CheckCircle, Loader2, DollarSign, TrendingUp
+} from 'lucide-react';
 import Image from 'next/image';
 
 function DashboardContent() {
@@ -76,7 +80,7 @@ function DashboardContent() {
         const artistId = profData.success && profData.data ? profData.data.id : null;
 
         const artworksUrl = artistId
-          ? `${API_BASE_URL}/artworks?artistId=${artistId}`
+          ? `${API_BASE_URL}/artworks?artistId=${artistId}&isVerified=all`
           : `${API_BASE_URL}/artworks`;
 
         const artworksResponse = await fetch(artworksUrl, { headers });
@@ -572,6 +576,15 @@ function DashboardContent() {
                                     fill
                                     className="object-cover"
                                   />
+                                )}
+                                {artwork.is_verified ? (
+                                  <span className="absolute top-2 left-2 bg-blue-500/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded flex items-center gap-1 shadow-sm">
+                                    <CheckCircle className="w-3 h-3" /> Verified
+                                  </span>
+                                ) : (
+                                  <span className="absolute top-2 left-2 bg-amber-500/90 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded flex items-center gap-1 shadow-sm">
+                                    <Loader2 className="w-3 h-3 animate-spin" /> Pending Review
+                                  </span>
                                 )}
                                 {artwork.is_available ? (
                                   <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">

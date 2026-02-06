@@ -17,6 +17,7 @@ export default function AdminLayout({
                             <Link href="/admin/users" className="block py-2 hover:text-[#D2691E] transition-colors">Users & Artists</Link>
                             <Link href="/admin/artworks" className="block py-2 hover:text-[#D2691E] transition-colors">Artworks</Link>
                             <Link href="/admin/orders" className="block py-2 hover:text-[#D2691E] transition-colors">Orders</Link>
+                            <Link href="/admin/customer-care" className="block py-2 hover:text-[#D2691E] transition-colors flex items-center h-full">Customer Care <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" title="New messages"></span></Link>
                             <div className="border-t border-[#E6E1DC]/10 my-4 pt-4">
                                 <Link href="/" className="block py-2 text-sm opacity-60 hover:opacity-100">← Back to Site</Link>
                             </div>

@@ -1,4 +1,4 @@
-import { Share2, Heart, ShoppingCart } from 'lucide-react';
+import { Share2, Heart, ShoppingCart, Check } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,7 @@ interface ArtworkProps {
         id: number;
         title: string;
         artistName: string;
+        artistId?: number;
         price: number;
         tribe: string;
         medium: string;
@@ -26,6 +27,7 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
     const { addToCart } = useCart();
     const router = useRouter();
     const [isAddedToCart, setIsAddedToCart] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
 
     const handleAddToCart = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -40,6 +42,16 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
         });
         setIsAddedToCart(true);
         setTimeout(() => setIsAddedToCart(false), 2000);
+    };
+
+    const handleShare = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const url = `${window.location.origin}/artworks/${artwork.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        });
     };
 
     return (
@@ -91,15 +103,11 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
                         <Heart className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            // Share logic could go here
-                            alert('Share feature coming soon!');
-                        }}
-                        className="p-2 bg-white/90 backdrop-blur rounded-full text-gray-700 hover:text-amber-600 shadow-sm"
+                        onClick={handleShare}
+                        className={`p-2 bg-white/90 backdrop-blur rounded-full shadow-sm transition-colors ${isCopied ? 'text-green-600' : 'text-gray-700 hover:text-amber-600'}`}
+                        title="Copy Link"
                     >
-                        <Share2 className="w-4 h-4" />
+                        {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
                     </button>
                 </div>
                 {(artwork.stock_quantity !== undefined && artwork.stock_quantity !== null && Number(artwork.stock_quantity) > 0) ? (
@@ -125,7 +133,15 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
                 <p className="text-sm text-gray-500 mb-4">{artwork.medium} • {artwork.size}</p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100 gap-2">
-                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <div
+                        className={`flex items-center space-x-2 flex-1 min-w-0 ${artwork.artistId ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (artwork.artistId && !isNaN(Number(artwork.artistId))) {
+                                router.push(`/artists/${artwork.artistId}`);
+                            }
+                        }}
+                    >
                         {artwork.artistProfileImage ? (
                             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 animate-in fade-in duration-500">
                                 <img src={artwork.artistProfileImage} alt={artwork.artistName} className="w-full h-full object-cover" />

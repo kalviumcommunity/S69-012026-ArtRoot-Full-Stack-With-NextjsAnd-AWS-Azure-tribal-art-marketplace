@@ -8,8 +8,12 @@ export async function GET(req: NextRequest) {
         const page = Number(searchParams.get('page')) || 1;
         const limit = Number(searchParams.get('limit')) || 10;
         const tribe = searchParams.get('tribe') || undefined;
-        const isVerified = searchParams.get('isVerified') === 'true' ? true :
-            searchParams.get('isVerified') === 'false' ? false : undefined;
+        let isVerified: boolean | undefined = true;
+        if (searchParams.has('isVerified')) {
+            if (searchParams.get('isVerified') === 'true') isVerified = true;
+            else if (searchParams.get('isVerified') === 'false') isVerified = false;
+            else isVerified = undefined;
+        }
 
         const result = await artistService.getArtists({
             page,

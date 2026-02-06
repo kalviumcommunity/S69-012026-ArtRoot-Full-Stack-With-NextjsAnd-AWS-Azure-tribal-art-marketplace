@@ -8,6 +8,7 @@ interface ProductCardProps {
     id: number;
     title: string;
     artist: string;
+    artistId?: number; // Make optional initially to prevent build break, but should be used if present
     price: number;
     imageUrl: string;
     tribe: string;
@@ -15,7 +16,7 @@ interface ProductCardProps {
     artistProfileImage?: string;
 }
 
-export default function ProductCard({ id, title, artist, price, imageUrl, tribe, stockQuantity = 1, artistProfileImage }: ProductCardProps) {
+export default function ProductCard({ id, title, artist, artistId, price, imageUrl, tribe, stockQuantity = 1, artistProfileImage }: ProductCardProps) {
     const { addToCart } = useCart();
     const router = useRouter();
 
@@ -31,6 +32,14 @@ export default function ProductCard({ id, title, artist, price, imageUrl, tribe,
             tribe,
             available: true
         });
+    };
+
+    // Helper to handle artist click without triggering card navigation
+    const handleArtistClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (artistId) {
+            router.push(`/artists/${artistId}`);
+        }
     };
 
     return (
@@ -73,22 +82,31 @@ export default function ProductCard({ id, title, artist, price, imageUrl, tribe,
             </div>
 
             <div className="space-y-1 text-center md:text-left flex items-start gap-3">
-                {artistProfileImage ? (
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 flex-shrink-0 mt-1">
+                <div
+                    onClick={handleArtistClick}
+                    className={`relative w-10 h-10 rounded-full overflow-hidden border border-gray-100 flex-shrink-0 mt-1 ${artistId ? 'cursor-pointer hover:opacity-80' : ''}`}
+                >
+                    {artistProfileImage ? (
                         <img src={artistProfileImage} alt={artist} className="w-full h-full object-cover" />
-                    </div>
-                ) : (
-                    <div className="w-10 h-10 rounded-full bg-[#E6E1DC] flex items-center justify-center text-[10px] font-bold text-[#2B2B2B]/40 flex-shrink-0 mt-1 uppercase">
-                        {artist.substring(0, 2)}
-                    </div>
-                )}
-                <div className="flex-1 min-w-0">
+                    ) : (
+                        <div className="w-full h-full bg-[#E6E1DC] flex items-center justify-center text-[10px] font-bold text-[#2B2B2B]/40 uppercase">
+                            {artist.substring(0, 2)}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex-1 min-w-0 text-left">
                     <h3 className="font-serif text-lg text-[#2B2B2B] group-hover:text-[#D2691E] transition-colors line-clamp-1">
                         {title}
                     </h3>
-                    <p className="font-sans text-xs text-[#2B2B2B]/60 uppercase tracking-wide truncate">
+
+                    <p
+                        onClick={handleArtistClick}
+                        className={`font-sans text-xs text-[#2B2B2B]/60 uppercase tracking-wide truncate w-fit ${artistId ? 'cursor-pointer hover:text-[#D2691E] hover:underline' : ''}`}
+                    >
                         {artist}
                     </p>
+
                     <p className="font-sans text-sm font-medium text-[#2B2B2B] pt-1">
                         ₹{price.toLocaleString('en-IN')}
                     </p>

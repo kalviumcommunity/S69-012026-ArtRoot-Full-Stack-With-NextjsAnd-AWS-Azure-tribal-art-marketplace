@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Mail, MapPin, Phone, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, MapPin, Phone, Loader2, CheckCircle, AlertCircle, MessageCircle } from 'lucide-react';
 
 export default function ContactPage() {
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -75,6 +75,23 @@ export default function ContactPage() {
                                     12, Heritage Lane, <br />
                                     Kala Ghoda, Mumbai - 400001
                                 </p>
+                            </div>
+                        </div>
+                        <div className="flex items-start">
+                            <MessageCircle className="w-6 h-6 text-[#D2691E] mr-4 mt-1" />
+                            <div>
+                                <h3 className="font-serif text-xl text-[#2B2B2B]">Live Chat</h3>
+                                <p className="font-sans text-[#2B2B2B]/60 italic font-medium">Available 24/7 for collectors</p>
+                                <button
+                                    onClick={() => {
+                                        const widget = document.querySelector('button[title="Chat with Support"]') as HTMLButtonElement;
+                                        if (widget) widget.click();
+                                        else alert('Please login to use live chat');
+                                    }}
+                                    className="text-xs text-[#D2691E] hover:underline uppercase tracking-widest font-bold mt-2"
+                                >
+                                    Open Chat Box →
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -35,7 +35,7 @@ export async function getArtistById(artistId: number) {
                 a.profile_image_url, a.is_verified, a.verification_date,
                 a.specialties, a.years_active, a.created_at, a.updated_at,
                 u.name, u.email,
-                COUNT(DISTINCT ar.id) as total_artworks,
+                COUNT(DISTINCT CASE WHEN ar.is_verified = TRUE AND ar.is_available = TRUE THEN ar.id END) as total_artworks,
                 COUNT(DISTINCT CASE WHEN ar.is_available = TRUE THEN ar.id END) as available_artworks,
                 ROUND(AVG(COALESCE(r.rating, 0))::numeric, 2) as average_rating,
                 COUNT(DISTINCT r.id) as review_count,
@@ -219,7 +219,7 @@ export async function getArtists(filters: {
                 a.id, a.user_id, a.tribe, a.location, a.biography,
                 a.is_verified, a.specialties, a.years_active, a.created_at,
                 u.name,
-                COUNT(DISTINCT ar.id) as total_artworks,
+                COUNT(DISTINCT CASE WHEN ar.is_verified = TRUE AND ar.is_available = TRUE THEN ar.id END) as total_artworks,
                 ROUND(AVG(COALESCE(r.rating, 0))::numeric, 2) as average_rating,
                 COUNT(DISTINCT r.id) as review_count
             FROM artists a
@@ -308,7 +308,7 @@ export async function getArtistsByTribe(tribe: string, page: number = 1, limit: 
             SELECT 
                 a.id, a.user_id, a.tribe, a.location, a.biography,
                 u.name, u.email,
-                COUNT(DISTINCT ar.id) as total_artworks,
+                COUNT(DISTINCT CASE WHEN ar.is_verified = TRUE AND ar.is_available = TRUE THEN ar.id END) as total_artworks,
                 ROUND(AVG(COALESCE(r.rating, 0))::numeric, 2) as average_rating
             FROM artists a
             JOIN users u ON a.user_id = u.id

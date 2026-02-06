@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Check, X, Shield, ShieldAlert, BadgeCheck } from 'lucide-react';
+import Link from 'next/link';
+import { Shield, ShieldAlert, Check, X, Loader2, BadgeCheck, ExternalLink, Search } from 'lucide-react';
 
 interface User {
     id: number;
@@ -13,12 +14,15 @@ interface User {
     artist_id: number | null;
     is_verified: boolean;
     tribe: string;
+    biography?: string;
+    location?: string;
 }
 
 export default function AdminUsersPage() {
     const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedArtist, setSelectedArtist] = useState<User | null>(null);
 
     const fetchUsers = async () => {
         const token = localStorage.getItem('token');
@@ -66,6 +70,12 @@ export default function AdminUsersPage() {
                     }
                     return u;
                 }));
+                if (selectedArtist && selectedArtist.id === targetUserId) {
+                    setSelectedArtist(prev => prev ? {
+                        ...prev,
+                        is_verified: action === 'verify_artist' ? value : prev.is_verified
+                    } : null);
+                }
             }
         } catch (error) {
             console.error('Action failed', error);
@@ -97,8 +107,8 @@ export default function AdminUsersPage() {
                                 </td>
                                 <td className="p-4 capitalize">
                                     <span className={`px-2 py-1 rounded text-xs font-medium ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                                            user.role === 'artist' ? 'bg-orange-100 text-orange-700' :
-                                                'bg-gray-100 text-gray-700'
+                                        user.role === 'artist' ? 'bg-orange-100 text-orange-700' :
+                                            'bg-gray-100 text-gray-700'
                                         }`}>
                                         {user.role}
                                     </span>
@@ -114,7 +124,31 @@ export default function AdminUsersPage() {
                                     )}
                                 </td>
                                 <td className="p-4 flex gap-3">
-                                    {/* Artist Verification */}
+                                    {/* Quick Bio Info */}
+                                    {user.role === 'artist' && (
+                                        <button
+                                            title="Quick Bio Review"
+                                            onClick={() => setSelectedArtist(user)}
+                                            className="p-2 rounded hover:bg-gray-100 text-blue-500"
+                                        >
+                                            <Search className="w-5 h-5" />
+                                        </button>
+                                    )}
+
+                                    {/* Artist Profile Link - BLUE SHIELD */}
+                                    {user.role === 'artist' && user.artist_id && (
+                                        <a
+                                            href={`/artists/${user.artist_id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title="View Full Artist Portfolio"
+                                            className="p-2 rounded hover:bg-gray-100 text-blue-500"
+                                        >
+                                            <Shield className="w-5 h-5" />
+                                        </a>
+                                    )}
+
+                                    {/* Artist Verification Toggle */}
                                     {user.role === 'artist' && (
                                         <button
                                             title={user.is_verified ? "Unverify Artist" : "Verify Artist"}
@@ -141,6 +175,67 @@ export default function AdminUsersPage() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Artist Detail Modal */}
+            {selectedArtist && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h3 className="font-serif text-2xl text-gray-900">{selectedArtist.name}</h3>
+                                {selectedArtist.artist_id && (
+                                    <a
+                                        href={`/artists/${selectedArtist.artist_id}`}
+                                        target="_blank"
+                                        className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 mt-1 font-bold uppercase tracking-wider"
+                                    >
+                                        Visit Full Profile <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                )}
+                            </div>
+                            <button onClick={() => setSelectedArtist(null)} className="p-2 hover:bg-white rounded-full transition-colors">
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold tracking-widest text-[#D2691E] mb-1">Tribe / Style</p>
+                                    <p className="font-medium text-gray-900">{selectedArtist.tribe || 'Not provided'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold tracking-widest text-[#D2691E] mb-1">Location</p>
+                                    <p className="font-medium text-gray-900">{selectedArtist.location || 'Not provided'}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase font-bold tracking-widest text-[#D2691E] mb-2">Biography</p>
+                                <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed max-h-48 overflow-y-auto italic">
+                                    "{selectedArtist.biography || 'No biography provided yet by the artist.'}"
+                                </div>
+                            </div>
+                            <div className="pt-4 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${selectedArtist.is_verified ? 'bg-green-500' : 'bg-yellow-400 animate-pulse'}`} />
+                                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {selectedArtist.is_verified ? 'Verified Artist' : 'Pending Verification'}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => handleAction(selectedArtist.id, 'verify_artist', !selectedArtist.is_verified)}
+                                    className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${selectedArtist.is_verified
+                                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                        : 'bg-[#D2691E] text-white hover:bg-[#b05516] shadow-lg shadow-orange-200'
+                                        }`}
+                                >
+                                    {selectedArtist.is_verified ? 'Revoke Status' : 'Approve Artist'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
