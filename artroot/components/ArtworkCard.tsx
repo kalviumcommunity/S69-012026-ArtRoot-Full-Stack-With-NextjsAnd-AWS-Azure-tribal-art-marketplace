@@ -1,6 +1,7 @@
 import { Share2, Heart, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
 
@@ -15,15 +16,19 @@ interface ArtworkProps {
         size: string;
         description: string;
         available: boolean;
+        stock_quantity: number;
         image?: string;
+        artistProfileImage?: string;
     };
 }
 
 export default function ArtworkCard({ artwork }: ArtworkProps) {
     const { addToCart } = useCart();
+    const router = useRouter();
     const [isAddedToCart, setIsAddedToCart] = useState(false);
 
-    const handleAddToCart = () => {
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.stopPropagation();
         addToCart({
             artworkId: artwork.id,
             title: artwork.title,
@@ -38,7 +43,10 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+        <div
+            onClick={() => router.push(`/artworks/${artwork.id}`)}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-pointer"
+        >
             <div className="relative aspect-4/3 bg-gray-100 overflow-hidden">
                 {/* Image display */}
                 {artwork.image ? (
@@ -82,13 +90,25 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
                     >
                         <Heart className="w-4 h-4" />
                     </button>
-                    <button className="p-2 bg-white/90 backdrop-blur rounded-full text-gray-700 hover:text-amber-600 shadow-sm">
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Share logic could go here
+                            alert('Share feature coming soon!');
+                        }}
+                        className="p-2 bg-white/90 backdrop-blur rounded-full text-gray-700 hover:text-amber-600 shadow-sm"
+                    >
                         <Share2 className="w-4 h-4" />
                     </button>
                 </div>
-                {artwork.available && (
+                {(artwork.stock_quantity !== undefined && artwork.stock_quantity !== null && Number(artwork.stock_quantity) > 0) ? (
                     <span className="absolute top-3 left-3 bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-sm">
                         Available
+                    </span>
+                ) : (
+                    <span className="absolute top-3 left-3 bg-red-500/90 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-sm">
+                        Sold Out
                     </span>
                 )}
             </div>
@@ -106,11 +126,19 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100 gap-2">
                     <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0"></div>
+                        {artwork.artistProfileImage ? (
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 animate-in fade-in duration-500">
+                                <img src={artwork.artistProfileImage} alt={artwork.artistName} className="w-full h-full object-cover" />
+                            </div>
+                        ) : (
+                            <div className="w-8 h-8 bg-[#E6E1DC] rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-[#2B2B2B]/30 uppercase">
+                                {artwork.artistName.substring(0, 1)}
+                            </div>
+                        )}
                         <span className="text-sm font-medium text-gray-700 truncate">{artwork.artistName}</span>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                        {artwork.available && (
+                        {(artwork.stock_quantity !== undefined && artwork.stock_quantity !== null && Number(artwork.stock_quantity) > 0) && (
                             <button
                                 onClick={handleAddToCart}
                                 className={`p-2 rounded-full transition-all ${isAddedToCart ? 'bg-green-500 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
@@ -119,9 +147,9 @@ export default function ArtworkCard({ artwork }: ArtworkProps) {
                                 <ShoppingCart className="w-4 h-4" />
                             </button>
                         )}
-                        <Link href={`/artworks/${artwork.id}`} className="text-amber-600 text-sm font-semibold hover:text-amber-700">
+                        <span className="text-amber-600 text-sm font-semibold hover:text-amber-700">
                             View
-                        </Link>
+                        </span>
                     </div>
                 </div>
             </div>

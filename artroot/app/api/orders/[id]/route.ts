@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 // GET specific order
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await getAuthUser(req);
@@ -15,7 +15,8 @@ export async function GET(
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        const id = Number((await params).id);
+        const { id: idParam } = await params;
+        const id = Number(idParam);
         const order = await orderService.getOrderById(id);
 
         if (!order) {
@@ -42,7 +43,7 @@ export async function GET(
 // DELETE cancel order
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await getAuthUser(req);
@@ -50,7 +51,8 @@ export async function DELETE(
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        const id = Number((await params).id);
+        const { id: idParam } = await params;
+        const id = Number(idParam);
         const order = await orderService.getOrderById(id);
 
         if (!order) {
@@ -58,34 +60,57 @@ export async function DELETE(
         }
 
         // Authorization check: User must be buyer, artist, or admin
-        let canCancel = false;
         const userId = parseInt(user.userId);
+        let canCancel = false;
 
-        console.log(`[DEBUG] Cancel attempt - UserID: ${userId}, Role: ${user.role}, OrderID: ${id}`);
-        console.log(`[DEBUG] Order details - BuyerID: ${order.buyer_id}, ArtistID: ${order.artist_id}`);
+        logger.info('API', 'Cancel attempt', {
+            userId,
+            userRole: user.role,
+            orderId: id,
+            buyerId: order.buyer_id,
+            artistId: order.artist_id
+        });
 
+        // Debug logging
+        console.log('=== CANCEL ORDER DEBUG ===');
+        console.log('User ID:', userId, '(type:', typeof userId, ')');
+        console.log('Buyer ID:', order.buyer_id, '(type:', typeof order.buyer_id, ')');
+        console.log('Match?:', order.buyer_id === userId);
+        console.log('========================');
+
+        // Admin can cancel any order
         if (user.role === 'admin') {
             canCancel = true;
-        } else {
-            if (order.buyer_id == userId) {
-                console.log('[DEBUG] Match found: User is the buyer');
-                canCancel = true;
-            } else {
+            logger.info('API', 'Admin access granted');
+        }
+        // Buyer can cancel their own order
+        else if (Number(order.buyer_id) === userId) {
+            canCancel = true;
+            logger.info('API', 'Buyer access granted');
+        }
+        // Artist can cancel orders for their artworks
+        else {
+            try {
                 const artistProfile = await artistService.getArtistByUserId(userId);
-                console.log(`[DEBUG] Artist profile check - Found ID: ${artistProfile?.id}`);
-                if (artistProfile && artistProfile.id == order.artist_id) {
-                    console.log('[DEBUG] Match found: User is the artist');
+                if (artistProfile && artistProfile.id === order.artist_id) {
                     canCancel = true;
+                    logger.info('API', 'Artist access granted');
                 }
+            } catch (error) {
+                logger.warn('API', 'Artist profile check failed', { error });
             }
         }
 
         if (!canCancel) {
-            console.log('[DEBUG] Access denied: No match found');
-            return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
+            logger.warn('API', 'Access denied', { userId, orderId: id });
+            return NextResponse.json({
+                success: false,
+                error: 'Access denied. You can only cancel your own orders.'
+            }, { status: 403 });
         }
 
         const updated = await orderService.cancelOrder(id);
+        logger.info('API', 'Order cancelled successfully', { orderId: id });
         return NextResponse.json({ success: true, message: 'Order cancelled successfully', data: updated });
     } catch (error: any) {
         if (error.message === 'ORDER_ALREADY_PROCESSED') {
@@ -93,5 +118,48 @@ export async function DELETE(
         }
         logger.error('API', 'Failed to cancel order', { error: error.message });
         return NextResponse.json({ success: false, error: 'Failed to cancel order' }, { status: 500 });
+    }
+}
+
+// PATCH update order status
+export async function PATCH(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const user = await getAuthUser(req);
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { id: idParam } = await params;
+        const id = Number(idParam);
+        const order = await orderService.getOrderById(id);
+
+        if (!order) {
+            return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
+        }
+
+        // Authorization check: User must be artist or admin
+        if (user.role !== 'admin') {
+            const userId = parseInt(user.userId);
+            const artistProfile = await artistService.getArtistByUserId(userId);
+            if (!artistProfile || artistProfile.id !== order.artist_id) {
+                return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
+            }
+        }
+
+        const body = await req.json();
+        const { status, trackingNumber } = body;
+
+        if (!status) {
+            return NextResponse.json({ success: false, error: 'Status is required' }, { status: 400 });
+        }
+
+        const updated = await orderService.updateOrderStatus(id, status, trackingNumber);
+        return NextResponse.json({ success: true, message: 'Order status updated', data: updated });
+    } catch (error: any) {
+        logger.error('API', 'Failed to update order status', { error: error.message });
+        return NextResponse.json({ success: false, error: 'Failed to update order status' }, { status: 500 });
     }
 }

@@ -45,7 +45,7 @@ export async function createOrder(data: {
 
         await transaction(async (client) => {
             const artworkResult = await client.query(
-                `SELECT id, price, artist_id, is_available FROM artworks WHERE id = $1`,
+                `SELECT id, price, artist_id, is_available, stock_quantity FROM artworks WHERE id = $1`,
                 [data.artworkId]
             );
 
@@ -54,8 +54,12 @@ export async function createOrder(data: {
                 throw new Error('ARTWORK_NOT_FOUND');
             }
 
-            if (!artwork.is_available) {
+            if (!artwork.is_available || artwork.stock_quantity <= 0) {
                 throw new Error('ARTWORK_NOT_AVAILABLE');
+            }
+
+            if (artwork.stock_quantity < quantity) {
+                throw new Error('NOT_ENOUGH_STOCK');
             }
 
             const unitPrice = Number(artwork.price);
@@ -85,8 +89,12 @@ export async function createOrder(data: {
             createdOrder = orderResult.rows[0];
 
             await client.query(
-                `UPDATE artworks SET is_available = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-                [data.artworkId]
+                `UPDATE artworks 
+                 SET stock_quantity = stock_quantity - $1,
+                     is_available = CASE WHEN stock_quantity - $1 <= 0 THEN false ELSE is_available END,
+                     updated_at = CURRENT_TIMESTAMP 
+                 WHERE id = $2`,
+                [quantity, data.artworkId]
             );
         });
 
@@ -234,7 +242,7 @@ export async function cancelOrder(orderId: number) {
 
         await transaction(async (client) => {
             const orderResult = await client.query(
-                `SELECT id, artwork_id, status FROM orders WHERE id = $1`,
+                `SELECT id, artwork_id, quantity, status FROM orders WHERE id = $1`,
                 [orderId]
             );
 
@@ -260,10 +268,11 @@ export async function cancelOrder(orderId: number) {
 
             await client.query(
                 `UPDATE artworks 
-                 SET is_available = true, 
+                 SET is_available = true,
+                     stock_quantity = stock_quantity + $1,
                      updated_at = CURRENT_TIMESTAMP 
-                 WHERE id = $1`,
-                [order.artwork_id]
+                 WHERE id = $2`,
+                [order.quantity, order.artwork_id]
             );
         });
 

@@ -13,8 +13,22 @@ export async function GET(req: NextRequest) {
         const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
         const isAvailable = searchParams.get('isAvailable') === 'true' ? true :
             searchParams.get('isAvailable') === 'false' ? false : undefined;
-        const isVerified = searchParams.get('isVerified') === 'true' ? true :
-            searchParams.get('isVerified') === 'false' ? false : undefined;
+        // Default isVerified to true for public gallery unless explicitly set to 'false' or 'all' (e.g. by admin)
+        // Since we don't have an 'all' param logic here yet, let's assume if it's undefined, it means TRUE for public safety.
+        // Admin endpoints usually go through /api/admin/artworks or pass specific flags.
+        // Accessing main gallery should only show verified items.
+
+        // Wait, if we set it to true by default, then 'undefined' becomes 'true'.
+        let isVerified: boolean | undefined = true;
+
+        if (searchParams.has('isVerified')) {
+            if (searchParams.get('isVerified') === 'true') isVerified = true;
+            else if (searchParams.get('isVerified') === 'false') isVerified = false;
+            else isVerified = undefined; // e.g. 'all' or empty - show everything
+        } else {
+            // Default to VERIFIED ONLY for safety
+            isVerified = true;
+        }
         const artistId = searchParams.get('artistId') ? Number(searchParams.get('artistId')) : undefined;
         const page = Number(searchParams.get('page')) || 1;
         const limit = Number(searchParams.get('limit')) || 12;
@@ -46,7 +60,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { title, description, price, tribe, medium, size, imageUrl } = body;
+        const { title, description, price, tribe, medium, size, imageUrl, additionalImages, stockQuantity } = body;
 
         if (!title || !price || !tribe) {
             return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
@@ -66,7 +80,9 @@ export async function POST(req: NextRequest) {
             tribe,
             medium,
             size,
-            imageUrl
+            imageUrl,
+            additionalImages,
+            stockQuantity: Number(stockQuantity) || 1
         });
 
         return NextResponse.json({ success: true, message: 'Artwork created successfully', data: artwork }, { status: 201 });

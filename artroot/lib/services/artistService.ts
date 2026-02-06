@@ -185,8 +185,8 @@ export async function getArtists(filters: {
         const limit = filters.limit || 10;
         const offset = (page - 1) * limit;
 
-        let whereConditions: string[] = [];
-        let params: any[] = [];
+        const whereConditions: string[] = [];
+        const params: any[] = [];
         let paramIndex = 1;
 
         if (filters.tribe) {

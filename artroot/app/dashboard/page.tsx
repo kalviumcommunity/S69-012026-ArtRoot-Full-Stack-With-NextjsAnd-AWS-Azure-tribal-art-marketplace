@@ -18,6 +18,11 @@ function DashboardContent() {
   const [artworks, setArtworks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasArtistProfile, setHasArtistProfile] = useState<boolean | null>(null);
+  const [artistProfile, setArtistProfile] = useState<any>(null);
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<any>(null);
 
   useEffect(() => {
     const userSession = getUserSession();
@@ -49,7 +54,11 @@ function DashboardContent() {
       };
 
       if (activeTab === 'orders') {
-        const response = await fetch(`${API_BASE_URL}/orders/my`, { headers });
+        const endpoint = session.role === 'artist'
+          ? `${API_BASE_URL}/orders/artist`
+          : `${API_BASE_URL}/orders/my`;
+
+        const response = await fetch(endpoint, { headers });
         const data = await response.json();
         if (data.success) {
           setOrders(data.data || []);
@@ -61,9 +70,6 @@ function DashboardContent() {
           setFavorites(data.data || []);
         }
       } else if (activeTab === 'my-artworks' && session.role === 'artist') {
-        const response = await fetch(`${API_BASE_URL}/orders/artist`, { headers });
-        const salesData = await response.json();
-
         // Get artist profile to get the id for filtering
         const profRes = await fetch(`${API_BASE_URL}/artists/profile`, { headers });
         const profData = await profRes.json();
@@ -79,24 +85,25 @@ function DashboardContent() {
         if (artworksData.success) {
           setArtworks(artworksData.data || []);
         }
-        if (salesData.success) {
-          setOrders(salesData.data || []);
-        }
-      } else if (activeTab === 'profile' && session.role === 'artist') {
-        // Check if artist has a profile
-        try {
-          const profileResponse = await fetch(`${API_BASE_URL}/artists/profile`, { headers });
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json();
-            setHasArtistProfile(profileData.success && profileData.data);
-          } else {
-            // If 404 or other error, artist doesn't have profile
+      } else if (activeTab === 'profile') {
+        // Check if artist has a profile (for artists only)
+        if (session.role === 'artist') {
+          try {
+            const profileResponse = await fetch(`${API_BASE_URL}/artists/profile`, { headers });
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              setHasArtistProfile(profileData.success && profileData.data);
+              if (profileData.success && profileData.data) {
+                setArtistProfile(profileData.data);
+              }
+            } else {
+              setHasArtistProfile(false);
+            }
+          } catch (err) {
+            // Network or parse error - assume no profile
+            console.error('Error checking artist profile:', err);
             setHasArtistProfile(false);
           }
-        } catch (err) {
-          // Network or parse error - assume no profile
-          console.error('Error checking artist profile:', err);
-          setHasArtistProfile(false);
         }
       }
     } catch (error) {
@@ -115,6 +122,93 @@ function DashboardContent() {
       'cancelled': 'bg-red-100 text-red-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setEditedProfile({ ...editedProfile, profile_image_url: data.url });
+      } else {
+        throw new Error(data.error || 'Failed to upload image');
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      alert(`Upload failed: ${error.message}`);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleEditProfile = () => {
+    setEditedProfile({ ...artistProfile });
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+    setEditedProfile(null);
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdatingProfile(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/artists/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editedProfile)
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setArtistProfile(data.data);
+        setIsEditingProfile(false);
+        setEditedProfile(null);
+        alert('Profile updated successfully!');
+        // Refresh the page to show updated images on product cards
+        window.location.reload();
+      } else {
+        throw new Error(data.error || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setUpdatingProfile(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -208,6 +302,30 @@ function DashboardContent() {
     }
   };
 
+  const handleUpdateOrderStatus = async (orderId: number, status: string, trackingNumber?: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status, trackingNumber })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Order status updated successfully');
+        fetchData();
+      } else {
+        throw new Error(data.error || 'Failed to update order status');
+      }
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   if (!session) {
     return null;
   }
@@ -232,13 +350,24 @@ function DashboardContent() {
 
       <div className="pt-24 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              {isArtist ? 'Artist Dashboard' : 'My Dashboard'}
-            </h1>
-            <p className="text-gray-600">
-              Welcome back, {session.email}
-            </p>
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                {isArtist ? 'Artist Dashboard' : 'My Dashboard'}
+              </h1>
+              <p className="text-gray-600">
+                Welcome back, {session.email}
+              </p>
+            </div>
+            {session.role === 'admin' && (
+              <a
+                href="/admin"
+                className="px-6 py-2 bg-[#2B2B2B] text-[#E6E1DC] font-serif hover:bg-[#D2691E] transition-colors rounded-lg flex items-center shadow-lg"
+              >
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Admin Panel
+              </a>
+            )}
           </div>
 
           {/* Tabs */}
@@ -303,15 +432,64 @@ function DashboardContent() {
                                 <p className="text-gray-700">{order.artwork_title || 'Artwork'}</p>
                                 <p className="font-bold text-gray-900">₹{Number(order.total_price).toLocaleString()}</p>
                               </div>
-                              {(order.status === 'pending' || (isArtist && order.status === 'confirmed')) && (
-                                <div className="mt-4 flex justify-end">
-                                  <button
-                                    onClick={() => handleCancelOrder(order.id, order.order_number)}
-                                    className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors uppercase tracking-wider"
-                                  >
-                                    Cancel Order
-                                  </button>
+
+                              {order.tracking_number && (
+                                <p className="mt-2 text-sm text-amber-700 font-medium">
+                                  Tracking: {order.tracking_number}
+                                </p>
+                              )}
+
+                              {isArtist ? (
+                                <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-4 items-end">
+                                  <div className="flex-1 min-w-[150px]">
+                                    <label className="block text-[10px] uppercase tracking-widest text-gray-400 mb-1">Update Status</label>
+                                    <select
+                                      value={order.status}
+                                      onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value, order.tracking_number)}
+                                      className="w-full text-xs font-sans border border-gray-200 rounded p-2 focus:outline-none focus:border-amber-600"
+                                    >
+                                      <option value="pending">Pending</option>
+                                      <option value="confirmed">Confirmed</option>
+                                      <option value="shipped">Shipped</option>
+                                      <option value="delivered">Delivered</option>
+                                    </select>
+                                  </div>
+                                  <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-[10px] uppercase tracking-widest text-gray-400 mb-1">Tracking Number</label>
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        defaultValue={order.tracking_number}
+                                        placeholder="Enter tracking #"
+                                        className="flex-1 text-xs font-sans border border-gray-200 rounded p-2 focus:outline-none focus:border-amber-600"
+                                        onBlur={(e) => {
+                                          if (e.target.value !== order.tracking_number) {
+                                            handleUpdateOrderStatus(order.id, order.status, e.target.value);
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                  {order.status === 'pending' && (
+                                    <button
+                                      onClick={() => handleCancelOrder(order.id, order.order_number)}
+                                      className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors uppercase tracking-wider mb-2"
+                                    >
+                                      Cancel
+                                    </button>
+                                  )}
                                 </div>
+                              ) : (
+                                (order.status === 'pending') && (
+                                  <div className="mt-4 flex justify-end">
+                                    <button
+                                      onClick={() => handleCancelOrder(order.id, order.order_number)}
+                                      className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors uppercase tracking-wider"
+                                    >
+                                      Cancel Order
+                                    </button>
+                                  </div>
+                                )
                               )}
                             </div>
                           ))}
@@ -450,6 +628,189 @@ function DashboardContent() {
                           />
                         </div>
 
+                        {/* Artist Profile Section */}
+                        {session.role === 'artist' && artistProfile && (
+                          <div className="mt-8 pt-8 border-t border-gray-200">
+                            <div className="flex items-center justify-between mb-6">
+                              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <Palette className="w-5 h-5 text-amber-600" />
+                                Artist Profile Information
+                              </h3>
+                              {!isEditingProfile && (
+                                <button
+                                  onClick={handleEditProfile}
+                                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-sans text-xs uppercase tracking-widest rounded-lg transition-colors"
+                                >
+                                  Edit Profile
+                                </button>
+                              )}
+                            </div>
+
+                            {!isEditingProfile ? (
+                              /* VIEW MODE */
+                              <div className="bg-gray-50/50 p-6 rounded-xl border border-gray-100">
+                                <div className="flex flex-col md:flex-row gap-6">
+                                  <div className="w-32 h-32 flex-shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden flex items-center justify-center">
+                                    {artistProfile.profile_image_url ? (
+                                      <img src={artistProfile.profile_image_url} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="text-4xl font-bold text-gray-300">{session.email?.[0]?.toUpperCase()}</div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-400 mb-1">Art Tradition</label>
+                                        <p className="text-sm font-medium text-gray-900">{artistProfile.tribe || 'Not specified'}</p>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-400 mb-1">Years Active</label>
+                                        <p className="text-sm font-medium text-gray-900">{artistProfile.years_active || 'Not specified'}</p>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-400 mb-1">Location</label>
+                                        <p className="text-sm font-medium text-gray-900">{artistProfile.location || 'Not specified'}</p>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-400 mb-1">Specialties</label>
+                                        <p className="text-sm font-medium text-gray-900">{artistProfile.specialties || 'Not specified'}</p>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-sans uppercase tracking-widest text-gray-400 mb-1">Biography</label>
+                                      <p className="text-sm text-gray-700">{artistProfile.biography || 'No biography added yet.'}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              /* EDIT MODE */
+                              <form onSubmit={handleUpdateProfile} className="space-y-6 bg-gray-50/50 p-6 rounded-xl border border-gray-100">
+                                <div className="flex flex-col md:flex-row gap-6 items-start">
+                                  <div className="space-y-4 flex-1">
+                                    <div>
+                                      <label className="block text-xs font-sans uppercase tracking-widest text-gray-500 mb-2">
+                                        Store Logo / Profile Image
+                                      </label>
+                                      <div className="relative">
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={handleProfileImageUpload}
+                                          disabled={uploadingImage}
+                                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg outline-none focus:border-amber-600 transition-colors font-sans file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        />
+                                        {uploadingImage && (
+                                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-600"></div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">
+                                        Upload your logo or profile photo (Max 5MB, JPG/PNG)
+                                      </p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-500 mb-2">Art Tradition (Tribe)</label>
+                                        <input
+                                          type="text"
+                                          value={editedProfile?.tribe || ''}
+                                          onChange={(e) => setEditedProfile({ ...editedProfile, tribe: e.target.value })}
+                                          className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:border-amber-600 transition-colors font-sans"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-500 mb-2">Years Active</label>
+                                        <input
+                                          type="number"
+                                          value={editedProfile?.years_active || ''}
+                                          onChange={(e) => setEditedProfile({ ...editedProfile, years_active: e.target.value })}
+                                          className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:border-amber-600 transition-colors font-sans"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-500 mb-2">Location</label>
+                                        <input
+                                          type="text"
+                                          value={editedProfile?.location || ''}
+                                          onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
+                                          className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:border-amber-600 transition-colors font-sans"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-sans uppercase tracking-widest text-gray-500 mb-2">Specialties</label>
+                                        <input
+                                          type="text"
+                                          value={editedProfile?.specialties || ''}
+                                          onChange={(e) => setEditedProfile({ ...editedProfile, specialties: e.target.value })}
+                                          className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:border-amber-600 transition-colors font-sans"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="w-32 h-32 flex-shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden flex items-center justify-center relative">
+                                    {editedProfile?.profile_image_url ? (
+                                      <img src={editedProfile.profile_image_url} alt="Logo Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="text-[10px] text-gray-300 text-center px-2 uppercase tracking-tighter">Logo Preview</div>
+                                    )}
+                                    <div className="absolute top-0 right-0 p-1 bg-amber-600 text-white rounded-bl-lg">
+                                      <Palette className="w-3 h-3" />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-sans uppercase tracking-widest text-gray-500 mb-2">Biography & Store Story</label>
+                                  <textarea
+                                    value={editedProfile?.biography || ''}
+                                    onChange={(e) => setEditedProfile({ ...editedProfile, biography: e.target.value })}
+                                    rows={4}
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg outline-none focus:border-amber-600 transition-colors font-sans resize-none"
+                                    placeholder="Tell your story and what makes your art unique..."
+                                  />
+                                </div>
+
+                                <div className="flex gap-3">
+                                  <button
+                                    type="submit"
+                                    disabled={updatingProfile}
+                                    className="px-8 py-3 bg-amber-600 hover:bg-amber-700 text-white font-sans uppercase tracking-widest text-xs font-bold rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                  >
+                                    {updatingProfile ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Saving...
+                                      </>
+                                    ) : (
+                                      'Save Changes'
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    disabled={updatingProfile}
+                                    className="px-8 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-sans uppercase tracking-widest text-xs font-bold rounded-lg transition-all disabled:opacity-50"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </form>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Loading state for artist profile */}
+                        {session.role === 'artist' && hasArtistProfile === null && (
+                          <div className="mt-8 pt-8 border-t border-gray-200">
+                            <div className="flex items-center justify-center py-8">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                              <span className="ml-3 text-gray-600">Loading profile...</span>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Artist Profile Alert (for artists without profile) */}
                         {session.role === 'artist' && hasArtistProfile === false && (
                           <div className="mt-8 pt-8 border-t border-gray-200">
@@ -517,7 +878,7 @@ function DashboardContent() {
       </div>
 
       <Footer />
-    </div>
+    </div >
   );
 }
 

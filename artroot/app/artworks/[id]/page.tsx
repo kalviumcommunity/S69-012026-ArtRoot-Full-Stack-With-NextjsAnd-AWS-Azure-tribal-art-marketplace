@@ -6,7 +6,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
-import { Check, ShoppingBag, Truck, Shield } from 'lucide-react';
+import { Check, ShoppingBag, Truck, Shield, ArrowLeft, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Artwork {
   id: number;
@@ -14,10 +15,12 @@ interface Artwork {
   price: number;
   description: string;
   image_url: string;
+  additional_images?: string[];
   artist_name: string;
   tribe: string;
   category: string;
   dimensions?: string;
+  stock_quantity: number;
 }
 
 export default function ArtworkDetail() {
@@ -26,6 +29,9 @@ export default function ArtworkDetail() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
+  const [currentImageIdx, setCurrentImageIdx] = useState(0);
+
+  const images = artwork ? [artwork.image_url, ...(artwork.additional_images || [])] : [];
 
   useEffect(() => {
     if (params.id) fetchArtwork(params.id as string);
@@ -78,22 +84,65 @@ export default function ArtworkDetail() {
       <Navbar />
 
       {/* Product Split Layout */}
-      <div className="pt-24 pb-16 max-w-screen-2xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
+      <div className="pt-24 pb-16 max-w-screen-xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[4.5fr_5.5fr] gap-12 lg:gap-20 items-start">
 
-          {/* Left: Image Gallery (Simple for now) */}
+          {/* Left: Image Gallery (Manual Carousel) */}
           <div className="px-6 lg:pl-12">
-            <div className="bg-gray-200 aspect-[3/4] overflow-hidden sticky top-32">
-              <img
-                src={artwork.image_url}
-                alt={artwork.title}
-                className="w-full h-full object-cover"
-              />
+            <div className="sticky top-32 space-y-6 max-w-lg mx-auto lg:ml-auto">
+              <div className="relative bg-white aspect-[4/5] overflow-hidden group rounded-2xl shadow-sm">
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentImageIdx}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    src={images[currentImageIdx]}
+                    alt={artwork.title}
+                    className="w-full h-full object-cover"
+                  />
+                </AnimatePresence>
+
+                {/* Manual Navigation Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIdx((prev) => (prev - 1 + images.length) % images.length)}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/80 backdrop-blur-sm text-[#2B2B2B] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentImageIdx((prev) => (prev + 1) % images.length)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/80 backdrop-blur-sm text-[#2B2B2B] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                    >
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIdx(idx)}
+                      className={`relative flex-shrink-0 w-20 aspect-square rounded-xl overflow-hidden border-2 transition-all ${currentImageIdx === idx ? 'border-[#D2691E] scale-105' : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                    >
+                      <img src={img} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right: Product Details */}
-          <div className="px-6 lg:pr-12 lg:pt-8 flex flex-col justify-center">
+          <div className="px-6 lg:pr-12 lg:pt-0 flex flex-col">
 
             {/* Breadcrumbs / Tags */}
             <div className="flex items-center space-x-2 text-xs font-sans uppercase tracking-widest text-[#2B2B2B]/40 mb-6">
@@ -118,16 +167,38 @@ export default function ArtworkDetail() {
               <p>{artwork.description}</p>
             </div>
 
+            {/* Stock Info */}
+            <div className="mb-8 flex items-center gap-3">
+              {(artwork.stock_quantity !== undefined && artwork.stock_quantity !== null && Number(artwork.stock_quantity) > 0) ? (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="font-sans text-xs uppercase tracking-widest text-green-600 font-bold">
+                    In Stock ({artwork.stock_quantity})
+                  </span>
+                </>
+              ) : (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="font-sans text-xs uppercase tracking-widest text-red-500 font-bold">
+                    Currently Sold Out
+                  </span>
+                </>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="flex flex-col space-y-4 max-w-sm mb-12">
               <button
                 onClick={handleAddToCart}
+                disabled={(artwork.stock_quantity !== undefined && artwork.stock_quantity !== null && Number(artwork.stock_quantity) <= 0) || added}
                 className={`w-full py-4 text-center font-sans uppercase tracking-widest text-sm transition-all duration-300 ${added
-                  ? 'bg-green-600 text-white'
-                  : 'bg-[#2B2B2B] text-white hover:bg-[#D2691E]'
+                  ? 'bg-green-600 text-white cursor-default'
+                  : (artwork.stock_quantity !== undefined && artwork.stock_quantity !== null && Number(artwork.stock_quantity) <= 0)
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#2B2B2B] text-white hover:bg-[#D2691E]'
                   }`}
               >
-                {added ? 'Added to Cart' : 'Add to Collection'}
+                {(artwork.stock_quantity !== undefined && artwork.stock_quantity !== null && Number(artwork.stock_quantity) <= 0) ? 'Out of Stock' : added ? 'Added to Cart' : 'Add to Collection'}
               </button>
             </div>
 

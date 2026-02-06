@@ -12,11 +12,12 @@ export async function POST(req: NextRequest) {
         if (!validation.success) {
             return NextResponse.json({
                 success: false,
-                error: validation.error.format()._errors?.join(', ') || 'Validation failed'
+                error: validation.error.format()._errors?.at(0) || 'Validation failed'
             }, { status: 400 });
         }
 
-        const { name, email, password, role } = body; // role is optional in schema but can be passed
+        const { name, email, password } = validation.data;
+        const { role } = body; // role is optional and not in signupSchema
 
         // Check if user exists
         const exists = await emailExists(email);

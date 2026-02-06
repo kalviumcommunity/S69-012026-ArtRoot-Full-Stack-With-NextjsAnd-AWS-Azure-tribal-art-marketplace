@@ -7,10 +7,11 @@ import { logger } from '@/lib/logger';
 // GET single artwork
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = Number((await params).id);
+        const { id: idParam } = await params;
+        const id = Number(idParam);
         const artwork = await artworkService.getArtworkById(id);
 
         if (!artwork) {
@@ -27,7 +28,7 @@ export async function GET(
 // PUT update artwork
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await getAuthUser(req);
@@ -35,7 +36,8 @@ export async function PUT(
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        const id = Number((await params).id);
+        const { id: idParam } = await params;
+        const id = Number(idParam);
         const artwork = await artworkService.getArtworkById(id);
 
         if (!artwork) {
@@ -61,7 +63,7 @@ export async function PUT(
 // DELETE artwork
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await getAuthUser(req);
@@ -69,7 +71,8 @@ export async function DELETE(
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
         }
 
-        const id = Number((await params).id);
+        const { id: idParam } = await params;
+        const id = Number(idParam);
         const artwork = await artworkService.getArtworkById(id);
 
         if (!artwork) {

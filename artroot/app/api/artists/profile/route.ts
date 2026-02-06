@@ -95,15 +95,15 @@ export async function PUT(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { tribe, location, biography, specialties, yearsActive, profileImageUrl } = body;
+        const { tribe, location, biography, specialties, yearsActive, profileImageUrl, profile_image_url, years_active } = body;
 
         const updated = await artistService.updateArtistProfile(artist.id, {
             tribe,
             location,
             biography,
             specialties,
-            yearsActive: yearsActive ? parseInt(yearsActive) : undefined,
-            profileImageUrl
+            yearsActive: yearsActive || years_active ? parseInt(yearsActive || years_active) : undefined,
+            profileImageUrl: profileImageUrl || profile_image_url
         });
 
         return NextResponse.json({ success: true, message: 'Artist profile updated successfully', data: updated });

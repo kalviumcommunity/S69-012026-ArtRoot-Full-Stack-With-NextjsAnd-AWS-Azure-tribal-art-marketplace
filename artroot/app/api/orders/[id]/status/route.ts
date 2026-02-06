@@ -9,7 +9,7 @@ const validStatuses: orderService.OrderStatus[] = ['pending', 'confirmed', 'ship
 // PUT update order status
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await getAuthUser(req);
@@ -17,7 +17,8 @@ export async function PUT(
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        const id = Number((await params).id);
+        const { id: idParam } = await params;
+        const id = Number(idParam);
         const body = await req.json();
         const { status, trackingNumber } = body;
 

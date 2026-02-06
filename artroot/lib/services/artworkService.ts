@@ -12,13 +12,16 @@ export interface Artwork {
     size: string;
     is_available: boolean;
     is_verified: boolean;
+    stock_quantity: number;
     image_url: string;
+    additional_images: string[];
     created_at: Date;
     updated_at: Date;
 }
 
 export interface ArtworkWithArtist extends Artwork {
     artist_name: string;
+    artist_profile_image?: string;
 }
 
 // Get all artworks with filters
@@ -37,11 +40,21 @@ export async function getArtworks(filters: {
         const limit = filters.limit || 10;
         const offset = (page - 1) * limit;
 
-        let whereConditions: string[] = [];
-        let params: any[] = [];
+        const whereConditions: string[] = [];
+        const params: any[] = [];
         let paramIndex = 1;
 
         // Build WHERE clause dynamically
+        // Default to verified and available artworks unless specified otherwise (e.g., in admin panel)
+        // If isVerified is explicitly passed as undefined, we assume we want only verified ones for public view.
+        // However, the caller might be admin wanting to see all.
+        // Let's rely on the caller passing the correct flag, BUT for the public gallery (where this is mostly used),
+        // we should enforce verification.
+
+        // Strategy: If isVerified is undefined, check if we should default it.
+        // Ideally, the public API endpoint should force it.
+        // Here we just build the query based on what's passed.
+
         if (filters.tribe) {
             whereConditions.push(`ar.tribe = $${paramIndex}`);
             params.push(filters.tribe);
@@ -95,8 +108,8 @@ export async function getArtworks(filters: {
             SELECT 
                 ar.id, ar.artist_id, ar.title, ar.description, ar.price,
                 ar.tribe, ar.medium, ar.size, ar.is_available, ar.is_verified,
-                ar.image_url, ar.created_at, ar.updated_at,
-                u.name as artist_name
+                ar.stock_quantity, ar.image_url, ar.additional_images, ar.created_at, ar.updated_at,
+                u.name as artist_name, a.profile_image_url as artist_profile_image
             FROM artworks ar
             JOIN artists a ON ar.artist_id = a.id
             JOIN users u ON a.user_id = u.id
@@ -128,8 +141,8 @@ export async function getArtworkById(artworkId: number) {
             SELECT 
                 ar.id, ar.artist_id, ar.title, ar.description, ar.price,
                 ar.tribe, ar.medium, ar.size, ar.is_available, ar.is_verified,
-                ar.image_url, ar.created_at, ar.updated_at,
-                u.name as artist_name
+                ar.stock_quantity, ar.image_url, ar.additional_images, ar.created_at, ar.updated_at,
+                u.name as artist_name, a.profile_image_url as artist_profile_image
             FROM artworks ar
             JOIN artists a ON ar.artist_id = a.id
             JOIN users u ON a.user_id = u.id
@@ -153,12 +166,15 @@ export async function createArtwork(data: {
     medium: string;
     size: string;
     imageUrl?: string;
+    additionalImages?: string[];
+    stockQuantity?: number;
 }) {
     try {
         const result = await query<Artwork>(`
             INSERT INTO artworks (
-                artist_id, title, description, price, tribe, medium, size, image_url
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                artist_id, title, description, price, tribe, medium, size, 
+                image_url, additional_images, stock_quantity, is_verified
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)
             RETURNING *
         `, [
             data.artistId,
@@ -168,7 +184,9 @@ export async function createArtwork(data: {
             data.tribe,
             data.medium,
             data.size,
-            data.imageUrl || null
+            data.imageUrl || null,
+            data.additionalImages ? JSON.stringify(data.additionalImages) : '[]',
+            data.stockQuantity || 1
         ]);
 
         logger.info('DATABASE', 'Artwork created successfully', { artworkId: result.rows[0].id });
@@ -189,6 +207,8 @@ export async function updateArtwork(artworkId: number, data: Partial<{
     size: string;
     isAvailable: boolean;
     imageUrl: string;
+    additionalImages: string[];
+    stockQuantity: number;
 }>) {
     try {
         const updateFields: string[] = [];
@@ -233,6 +253,16 @@ export async function updateArtwork(artworkId: number, data: Partial<{
         if (data.imageUrl) {
             updateFields.push(`image_url = $${paramIndex}`);
             params.push(data.imageUrl);
+            paramIndex++;
+        }
+        if (data.additionalImages) {
+            updateFields.push(`additional_images = $${paramIndex}`);
+            params.push(JSON.stringify(data.additionalImages));
+            paramIndex++;
+        }
+        if (data.stockQuantity !== undefined) {
+            updateFields.push(`stock_quantity = $${paramIndex}`);
+            params.push(data.stockQuantity);
             paramIndex++;
         }
 
