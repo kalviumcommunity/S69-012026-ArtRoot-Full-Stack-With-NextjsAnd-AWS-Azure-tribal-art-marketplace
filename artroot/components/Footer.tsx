@@ -32,7 +32,14 @@ export default function Footer() {
                     <h4 className="font-sans text-[#C9A24D] text-xs uppercase tracking-widest">Support</h4>
                     <ul className="space-y-4 font-sans text-sm text-[#E6E1DC]/80">
                         <li><Link href="/about" className="hover:text-[#D2691E] transition-colors">About Us</Link></li>
-                        <li><Link href="/contact" className="hover:text-[#D2691E] transition-colors">Contact</Link></li>
+                        <li>
+                            <button
+                                onClick={() => window.dispatchEvent(new CustomEvent('open-chat'))}
+                                className="hover:text-[#D2691E] transition-colors"
+                            >
+                                Contact
+                            </button>
+                        </li>
                         <li><Link href="/shipping" className="hover:text-[#D2691E] transition-colors">Shipping & Returns</Link></li>
                         <li><Link href="/artist-signup" className="hover:text-[#D2691E] transition-colors">Join as Artist</Link></li>
                     </ul>
@@ -59,8 +66,8 @@ export default function Footer() {
             <div className="max-w-screen-2xl mx-auto px-6 md:px-12 mt-20 pt-8 border-t border-[#E6E1DC]/10 flex flex-col md:flex-row justify-between items-center text-xs text-[#E6E1DC]/40 font-sans">
                 <p>&copy; {new Date().getFullYear()} ArtRoot. All rights reserved.</p>
                 <div className="flex space-x-6 mt-4 md:mt-0">
-                    <span>Privacy Policy</span>
-                    <span>Terms of Service</span>
+                    <Link href="/privacy" className="hover:text-[#D2691E] transition-colors">Privacy Policy</Link>
+                    <Link href="/terms" className="hover:text-[#D2691E] transition-colors">Terms of Service</Link>
                 </div>
             </div>
         </footer>

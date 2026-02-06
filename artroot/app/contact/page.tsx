@@ -84,9 +84,7 @@ export default function ContactPage() {
                                 <p className="font-sans text-[#2B2B2B]/60 italic font-medium">Available 24/7 for collectors</p>
                                 <button
                                     onClick={() => {
-                                        const widget = document.querySelector('button[title="Chat with Support"]') as HTMLButtonElement;
-                                        if (widget) widget.click();
-                                        else alert('Please login to use live chat');
+                                        window.dispatchEvent(new CustomEvent('open-chat'));
                                     }}
                                     className="text-xs text-[#D2691E] hover:underline uppercase tracking-widest font-bold mt-2"
                                 >
