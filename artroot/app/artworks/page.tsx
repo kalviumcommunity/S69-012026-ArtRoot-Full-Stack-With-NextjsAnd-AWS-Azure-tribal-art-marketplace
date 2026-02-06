@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Navbar from '@/components/Navbar';
 import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
 import { API_BASE_URL } from '@/lib/api';
@@ -12,6 +13,8 @@ interface Artwork {
   image_url: string;
   artist_name: string;
   tribe: string;
+  stock_quantity: number;
+  artist_profile_image: string;
 }
 
 export default function ArtworksPage() {
@@ -45,6 +48,7 @@ export default function ArtworksPage() {
 
   return (
     <div className="min-h-screen bg-[#E6E1DC]">
+      <Navbar />
       {/* Spacer for Fixed Navbar */}
       <div className="h-24 bg-[#E6E1DC]" />
 
@@ -116,8 +120,17 @@ export default function ArtworksPage() {
                   price={artwork.price}
                   imageUrl={artwork.image_url}
                   tribe={artwork.tribe}
+                  stockQuantity={artwork.stock_quantity}
+                  artistProfileImage={artwork.artist_profile_image}
                 />
               ))}
+            </div>
+          )}
+
+          {filteredArtworks.length === 0 && !loading && (
+            <div className="text-center py-20 text-gray-500">
+              <p className="text-xl font-serif">No artworks found.</p>
+              <p className="text-sm">Try adjusting your filters or check back later for new verified arrivals.</p>
             </div>
           )}
         </main>

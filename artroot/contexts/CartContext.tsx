@@ -20,6 +20,7 @@ interface CartContextType {
   clearCart: () => void;
   getCartTotal: () => number;
   getCartCount: () => number;
+  isLoaded: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -51,7 +52,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.artworkId === item.artworkId);
-      
+
       if (existingItem) {
         // Update quantity if item already exists
         return prevCart.map(cartItem =>
@@ -60,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             : cartItem
         );
       }
-      
+
       // Add new item with quantity 1
       return [...prevCart, { ...item, quantity: 1 }];
     });
@@ -105,6 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         getCartTotal,
         getCartCount,
+        isLoaded,
       }}
     >
       {children}

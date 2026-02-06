@@ -12,7 +12,7 @@ export default function Navbar() {
     const [isMounted, setIsMounted] = useState(false);
     const [isArtist, setIsArtist] = useState(false);
     const router = useRouter();
-    const { getCartCount } = useCart();
+    const { getCartCount, clearCart } = useCart();
     const [session, setSession] = useState<ReturnType<typeof getUserSession> | null>(null);
 
     useEffect(() => {
@@ -57,6 +57,7 @@ export default function Navbar() {
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        clearCart();
         // Dispatch event for other components
         window.dispatchEvent(new Event('auth-change'));
         setSession(null);
@@ -75,27 +76,27 @@ export default function Navbar() {
                         <div className="bg-[#D2691E] p-2 rounded-lg group-hover:bg-[#b05516] transition-colors">
                             <Palette className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-2xl font-serif font-bold text-[#2B2B2B]">
+                        <span className="text-2xl font-serif font-bold transition-colors text-[#D2691E] hover:text-[#4B4B4B]">
                             ArtRoot
                         </span>
                     </Link>
 
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-8">
-                        <Link href="/" className="font-sans font-medium transition-colors text-[#2B2B2B]/70 hover:text-[#D2691E]">
+                        <Link href="/" className="font-sans font-medium transition-colors text-[#D2691E] hover:text-[#4B4B4B]">
                             Home
                         </Link>
-                        <Link href="/artworks" className="font-sans font-medium transition-colors text-[#2B2B2B]/70 hover:text-[#D2691E]">
+                        <Link href="/artworks" className="font-sans font-medium transition-colors text-[#D2691E] hover:text-[#4B4B4B]">
                             Gallery
                         </Link>
-                        <Link href="/#mission" className="font-sans font-medium transition-colors text-[#2B2B2B]/70 hover:text-[#D2691E]">
+                        <Link href="/#mission" className="font-sans font-medium transition-colors text-[#D2691E] hover:text-[#4B4B4B]">
                             Mission
                         </Link>
 
-                        <div className="flex items-center space-x-4 pl-4 border-l border-[#2B2B2B]/10">
+                        <div className={`flex items-center space-x-4 pl-4 border-l ${scrolled ? 'border-[#2B2B2B]/10' : 'border-white/20'}`}>
                             {/* Cart Icon */}
-                            <Link href="/cart" className="relative p-2 rounded-full transition-colors hover:bg-[#2B2B2B]/5">
-                                <ShoppingCart className="w-5 h-5 text-[#2B2B2B]" />
+                            <Link href="/cart" className={`relative p-2 rounded-full transition-colors ${scrolled ? 'hover:bg-[#2B2B2B]/5' : 'hover:bg-white/10'}`}>
+                                <ShoppingCart className="w-5 h-5 transition-colors text-[#D2691E] hover:text-[#4B4B4B]" />
                                 {getCartCount() > 0 && (
                                     <span className="absolute -top-1 -right-1 bg-[#D2691E] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                                         {getCartCount()}
@@ -108,17 +109,22 @@ export default function Navbar() {
                                 <div className="w-20 h-8"></div>
                             ) : isAuthenticated ? (
                                 <>
-                                    <Link href="/dashboard" className="p-2 rounded-full transition-colors hover:bg-[#2B2B2B]/5">
-                                        <User className="w-5 h-5 text-[#2B2B2B]" />
+                                    <Link href="/dashboard" className={`p-2 rounded-full transition-colors ${scrolled ? 'hover:bg-[#2B2B2B]/5' : 'hover:bg-white/10'}`}>
+                                        <User className="w-5 h-5 transition-colors text-[#D2691E] hover:text-[#4B4B4B]" />
                                     </Link>
                                     {isArtist && (
                                         <span className="px-3 py-1 text-xs font-bold rounded-full bg-[#D2691E]/10 text-[#D2691E]">
                                             Artist
                                         </span>
                                     )}
+                                    {session?.role === 'admin' && (
+                                        <Link href="/admin" className="px-3 py-1 text-xs font-bold rounded-full bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors">
+                                            Admin
+                                        </Link>
+                                    )}
                                     <button
                                         onClick={handleLogout}
-                                        className="flex items-center px-4 py-2 rounded-full font-medium transition-all text-[#2B2B2B] hover:text-[#D2691E] hover:bg-[#D2691E]/5"
+                                        className={`flex items-center px-4 py-2 rounded-full font-medium transition-all text-[#D2691E] hover:text-[#4B4B4B] ${scrolled ? 'hover:bg-[#D2691E]/5' : 'hover:bg-white/10'}`}
                                     >
                                         <LogOut className="w-4 h-4 mr-2" />
                                         Logout
@@ -126,7 +132,7 @@ export default function Navbar() {
                                 </>
                             ) : (
                                 <>
-                                    <Link href="/login" className="flex items-center px-4 py-2 rounded-full font-medium transition-all text-[#2B2B2B] hover:text-[#D2691E]">
+                                    <Link href="/login" className="flex items-center px-4 py-2 rounded-full font-medium transition-all text-[#D2691E] hover:text-[#4B4B4B]">
                                         <LogIn className="w-4 h-4 mr-2" />
                                         Login
                                     </Link>
@@ -141,7 +147,7 @@ export default function Navbar() {
 
                     {/* Mobile Menu Button */}
                     <div className="md:hidden">
-                        <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-lg text-[#2B2B2B]">
+                        <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-lg transition-colors text-[#D2691E] hover:text-[#4B4B4B]">
                             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
                     </div>
@@ -180,6 +186,11 @@ export default function Navbar() {
                                 <div className="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full w-fit">
                                     Artist
                                 </div>
+                            )}
+                            {session?.role === 'admin' && (
+                                <Link href="/admin" className="text-xs font-bold text-purple-700 bg-purple-100 px-3 py-1 rounded-full w-fit hover:bg-purple-200" onClick={() => setIsOpen(false)}>
+                                    Admin Panel
+                                </Link>
                             )}
                             <button
                                 onClick={handleLogout}
