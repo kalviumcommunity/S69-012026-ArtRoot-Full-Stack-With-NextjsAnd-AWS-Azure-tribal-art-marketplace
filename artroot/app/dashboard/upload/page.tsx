@@ -1,9 +1,9 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { ArrowLeft, Upload, Check, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, Check, X, Image as ImageIcon, Loader2, ShieldAlert } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import { getUserSession } from '@/lib/auth';
 import Image from 'next/image';
@@ -17,6 +17,28 @@ export default function UploadArtworkPage() {
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', tribe: '', medium: '', size: '', imageUrl: '', additionalImages: [] as string[], stockQuantity: 1
   });
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Initial check on mount
+    const checkVerification = async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/artists/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setIsVerified(data.data.is_verified);
+          if (data.data.tribe) setFormData(prev => ({ ...prev, tribe: data.data.tribe }));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    checkVerification();
+  }, []);
 
   const tribes = ['Warli', 'Gond', 'Madhubani', 'Pattachitra', 'Tribal', 'Other'];
   const mediums = ['Acrylic', 'Oil', 'Watercolor', 'Mixed Media', 'Canvas', 'Paper', 'Other'];
@@ -65,6 +87,11 @@ export default function UploadArtworkPage() {
     const session = getUserSession();
     if (!session || session.role !== 'artist') {
       router.push('/login?role=artist');
+      return;
+    }
+
+    if (!isVerified) {
+      alert('Your profile is not yet verified. Please wait for admin approval.');
       return;
     }
 
@@ -134,10 +161,22 @@ export default function UploadArtworkPage() {
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
           </button>
 
-          <div className="flex items-center mb-12">
+          <div className="flex items-center mb-6">
             <Upload className="w-6 h-6 text-[#D2691E] mr-4" />
             <h1 className="font-serif text-4xl text-[#2B2B2B]">Upload Artwork</h1>
           </div>
+
+          {isVerified === false && (
+            <div className="mb-12 p-6 bg-amber-50 border border-amber-200 rounded-2xl flex gap-4 items-start animate-in slide-in-from-top duration-500">
+              <ShieldAlert className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-serif text-amber-900 font-bold">Verification Pending</p>
+                <p className="font-sans text-sm text-amber-700 leading-relaxed">
+                  Your artist profile is currently being reviewed by our curators. You can prepare your artwork details now, but the <strong>Publish</strong> button will be enabled once your account is verified.
+                </p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
@@ -193,13 +232,13 @@ export default function UploadArtworkPage() {
 
               <div className="pt-8 flex gap-6">
                 <button type="button" onClick={() => router.back()} className="px-8 py-4 border border-[#2B2B2B]/20 text-[#2B2B2B] font-sans text-xs uppercase tracking-widest hover:bg-[#2B2B2B] hover:text-[#E6E1DC] transition-all">Cancel</button>
-                <button type="submit" disabled={loading || uploading !== null} className="flex-1 px-8 py-4 bg-[#D2691E] text-[#E6E1DC] font-sans text-xs uppercase tracking-widest hover:bg-[#C9A24D] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                <button type="submit" disabled={loading || uploading !== null || isVerified === false} className="flex-1 px-8 py-4 bg-[#D2691E] text-[#E6E1DC] font-sans text-xs uppercase tracking-widest hover:bg-[#C9A24D] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Publishing...
                     </>
-                  ) : 'Publish Artwork'}
+                  ) : isVerified === false ? 'Verification Pending' : 'Publish Artwork'}
                 </button>
               </div>
             </div>

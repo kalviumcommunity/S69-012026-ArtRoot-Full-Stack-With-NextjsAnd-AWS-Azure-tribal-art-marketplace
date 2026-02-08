@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
         const result = await query(`
             SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at,
-                   a.id as artist_id, a.is_verified, a.tribe
+                   a.id as artist_id, a.is_verified, a.tribe, a.biography, a.location
             FROM users u
             LEFT JOIN artists a ON u.id = a.user_id
             ORDER BY u.created_at DESC

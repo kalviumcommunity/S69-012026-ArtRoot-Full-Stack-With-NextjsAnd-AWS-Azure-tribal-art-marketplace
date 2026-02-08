@@ -15,6 +15,7 @@ interface Artwork {
   id: number;
   title: string;
   artistName: string;
+  artistId?: number;
   price: number;
   tribe: string;
   medium: string;
@@ -48,12 +49,10 @@ export default function Home() {
     }
   }, [router]);
 
-  // Removed manual carousel state as its handled by component
-
   useEffect(() => {
     const fetchArtworks = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/artworks`);
+        const response = await fetch(`${API_BASE_URL}/artworks?isAvailable=true`);
         if (!response.ok) throw new Error('Failed');
         const data = await response.json();
         if (data.success) {
@@ -61,6 +60,7 @@ export default function Home() {
             id: a.id,
             title: a.title,
             artistName: a.artist_name || 'Tribal Artist',
+            artistId: a.artist_id,
             price: a.price,
             tribe: a.tribe,
             medium: a.medium,

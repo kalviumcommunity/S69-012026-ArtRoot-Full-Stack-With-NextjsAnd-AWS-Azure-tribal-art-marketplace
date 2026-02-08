@@ -8,6 +8,7 @@ import { Filter } from 'lucide-react';
 
 interface Artwork {
   id: number;
+  artist_id: number;
   title: string;
   price: number;
   image_url: string;
@@ -28,8 +29,8 @@ export default function ArtworksPage() {
 
   const fetchArtworks = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/artworks`);
-      const data = await res.json();
+      const response = await fetch(`${API_BASE_URL}/artworks?isAvailable=true`);
+      const data = await response.json();
       if (data.success) {
         setArtworks(data.data);
       }
@@ -117,6 +118,7 @@ export default function ArtworksPage() {
                   id={artwork.id}
                   title={artwork.title}
                   artist={artwork.artist_name}
+                  artistId={artwork.artist_id}
                   price={artwork.price}
                   imageUrl={artwork.image_url}
                   tribe={artwork.tribe}

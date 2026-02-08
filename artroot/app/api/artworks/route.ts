@@ -72,6 +72,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Artist profile not found' }, { status: 404 });
         }
 
+        if (!artist.is_verified) {
+            return NextResponse.json({
+                success: false,
+                error: 'Your artist profile is pending verification. You can upload artworks once an administrator verifies your account.'
+            }, { status: 403 });
+        }
+
         const artwork = await artworkService.createArtwork({
             artistId: artist.id,
             title,

@@ -83,6 +83,10 @@ export async function getArtworks(filters: {
             whereConditions.push(`ar.is_verified = $${paramIndex}`);
             params.push(filters.isVerified);
             paramIndex++;
+
+            if (filters.isVerified === true) {
+                whereConditions.push(`a.is_verified = true`);
+            }
         }
 
         if (filters.artistId !== undefined) {
@@ -97,6 +101,7 @@ export async function getArtworks(filters: {
         const countQuery = `
             SELECT COUNT(*) as total
             FROM artworks ar
+            JOIN artists a ON ar.artist_id = a.id
             ${whereClause}
         `;
         const countResult = await query<{ total: string }>(countQuery, params);

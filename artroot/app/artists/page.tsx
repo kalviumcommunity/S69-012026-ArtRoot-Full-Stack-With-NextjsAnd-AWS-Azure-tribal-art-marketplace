@@ -23,17 +23,18 @@ export default function ArtistsPage() {
 
                     <div className="grid md:grid-cols-3 gap-12">
                         {artists.map(artist => (
-                            <div key={artist.id} className="group cursor-pointer">
+                            <Link href={`/artists/${artist.id}`} key={artist.id} className="group cursor-pointer block">
                                 <div className="relative aspect-[3/4] overflow-hidden mb-6 bg-[#2B2B2B]/5">
                                     {/* Placeholder Image Div */}
-                                    <div className="absolute inset-0 bg-gray-300 animate-pulse group-hover:scale-105 transition-transform duration-700" />
+                                    {/* Using simple img tag for demo or Image component if available */}
+                                    <img src={artist.image} alt={artist.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent">
                                         <span className="text-[#E6E1DC] font-sans text-xs uppercase tracking-widest">{artist.tribe}</span>
                                     </div>
                                 </div>
                                 <h3 className="font-serif text-2xl text-[#2B2B2B] group-hover:text-[#D2691E] transition-colors">{artist.name}</h3>
                                 <p className="font-sans text-sm text-[#2B2B2B]/50 mt-1">{artist.location}</p>
-                            </div>
+                            </Link>
                         ))}
                     </div>
 

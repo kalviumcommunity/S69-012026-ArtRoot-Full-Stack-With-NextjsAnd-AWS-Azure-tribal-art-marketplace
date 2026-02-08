@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/contexts/CartContext";
+import ChatWidget from "@/components/ChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             {children}
+            <ChatWidget />
           </CartProvider>
         </AuthProvider>
       </body>
