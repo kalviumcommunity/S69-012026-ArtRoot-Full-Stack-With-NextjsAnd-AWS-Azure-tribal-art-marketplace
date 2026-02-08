@@ -92,9 +92,9 @@ export default function Home() {
         {/* Background Texture/glow */}
         <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(210,105,30,0.15)_0%,transparent_70%)]" />
 
-        {/* Carousel Container - Full Landscape Viewport */}
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div style={{ height: '70vh', width: '90vw', position: 'relative' }}>
+        {/* Carousel Container - Responsive Viewport */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="h-[50vh] md:h-[70vh] w-full md:w-[90vw] relative pointer-events-auto">
             <Carousel
               images={heroImages}
               baseWidth={1000}

@@ -14,7 +14,7 @@ interface CarouselProps {
 
 export default function Carousel({
     images,
-    baseWidth = 400,
+    baseWidth: propBaseWidth = 400,
     autoplay = true,
     autoplayDelay = 4000,
     pauseOnHover = true,
@@ -22,6 +22,16 @@ export default function Carousel({
 }: CarouselProps) {
     const [currentIdx, setCurrentIdx] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = windowWidth < 768;
+    const baseWidth = isMobile ? windowWidth * 0.85 : propBaseWidth;
 
     useEffect(() => {
         if (autoplay && (!pauseOnHover || !isHovered)) {
@@ -30,7 +40,7 @@ export default function Carousel({
             }, autoplayDelay);
             return () => clearInterval(timer);
         }
-    }, [autoplay, autoplayDelay, pauseOnHover, isHovered, currentIdx]);
+    }, [autoplay, autoplayDelay, pauseOnHover, isHovered, currentIdx, images.length]);
 
     const handleNext = () => {
         if (loop || currentIdx < images.length - 1) {
@@ -62,9 +72,12 @@ export default function Carousel({
                         }
 
                         const isCenter = diff === 0;
-                        const isVisible = Math.abs(diff) <= 2;
+                        const isVisible = Math.abs(diff) <= (isMobile ? 1 : 2);
 
                         if (!isVisible) return null;
+
+                        // Calculate spacing based on device
+                        const spacing = isMobile ? baseWidth * 0.6 : baseWidth * 0.4;
 
                         return (
                             <motion.div
@@ -74,15 +87,15 @@ export default function Carousel({
                                     scale: 0.8,
                                     rotateY: diff > 0 ? 25 : -25,
                                     z: -300,
-                                    x: diff * (baseWidth * 0.45)
+                                    x: diff * spacing * 1.2
                                 }}
                                 animate={{
                                     opacity: isCenter ? 1 : 0.6,
                                     scale: isCenter ? 1 : 0.8,
-                                    rotateY: diff * -10,
+                                    rotateY: diff * (isMobile ? -8 : -10),
                                     z: isCenter ? 0 : -400,
-                                    x: diff * (baseWidth * 0.4),
-                                    filter: isCenter ? 'brightness(1)' : 'brightness(0.4)', // Removed blur for performance
+                                    x: diff * spacing,
+                                    filter: isCenter ? 'brightness(1)' : 'brightness(0.4)',
                                 }}
                                 exit={{
                                     opacity: 0,
@@ -91,17 +104,16 @@ export default function Carousel({
                                     transition: { duration: 0.4 }
                                 }}
                                 transition={{
-                                    duration: 0.7, // Faster transition for snake-like feel
+                                    duration: 0.7,
                                     ease: "easeOut"
                                 }}
                                 style={{
                                     width: baseWidth,
-                                    maxWidth: '85vw',
-                                    height: '100%',
+                                    height: isMobile ? '70%' : '100%', // Adjust height on mobile to keep ratio
                                     position: 'absolute',
                                     zIndex: 10 - Math.abs(diff),
                                 }}
-                                className="rounded-3xl overflow-hidden shadow-2xl cursor-pointer border border-white/10 will-change-transform"
+                                className="rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl cursor-pointer border border-white/10 will-change-transform"
                                 onClick={() => setCurrentIdx(index)}
                             >
                                 <Image
@@ -122,12 +134,12 @@ export default function Carousel({
 
 
             {/* Navigation Indicators */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-30">
+            <div className="absolute bottom-4 md:bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-30">
                 {images.map((_, i) => (
                     <button
                         key={i}
                         onClick={() => setCurrentIdx(i)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentIdx ? 'bg-[#D2691E] w-8' : 'bg-white/30'
+                        className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${i === currentIdx ? 'bg-[#D2691E] w-6 md:w-8' : 'bg-white/30'
                             }`}
                     />
                 ))}
