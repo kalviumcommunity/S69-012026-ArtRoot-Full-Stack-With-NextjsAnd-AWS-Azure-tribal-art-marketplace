@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface CarouselProps {
     images: string[];
@@ -33,37 +34,35 @@ export default function Carousel({
 
     const handleNext = () => {
         if (loop || currentIdx < images.length - 1) {
-            setCurrentIdx((prev) => (prev + 1) % images.length);
+            setCurrentIdx((prev: number) => (prev + 1) % images.length);
         }
     };
 
     const handlePrev = () => {
         if (loop || currentIdx > 0) {
-            setCurrentIdx((prev) => (prev - 1 + images.length) % images.length);
+            setCurrentIdx((prev: number) => (prev - 1 + images.length) % images.length);
         }
     };
 
     return (
         <div
-            className="relative w-full h-full flex items-center justify-center overflow-visible"
+            className="relative w-full h-full flex items-center justify-center"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{ perspective: '1200px' }}
+            style={{ perspective: '1000px' }}
         >
-            <div className="relative w-full h-full flex items-center justify-center">
-                <AnimatePresence mode="popLayout">
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                <AnimatePresence mode="popLayout" initial={false}>
                     {images.map((img, index) => {
-                        // Calculate distance from current index
                         let diff = index - currentIdx;
 
-                        // Handle looping logic for distance
                         if (loop) {
                             if (diff > images.length / 2) diff -= images.length;
                             if (diff < -images.length / 2) diff += images.length;
                         }
 
                         const isCenter = diff === 0;
-                        const isVisible = Math.abs(diff) <= 2; // Only show 5 items max
+                        const isVisible = Math.abs(diff) <= 2;
 
                         if (!isVisible) return null;
 
@@ -73,51 +72,54 @@ export default function Carousel({
                                 initial={{
                                     opacity: 0,
                                     scale: 0.8,
-                                    rotateY: diff > 0 ? 30 : -30,
+                                    rotateY: diff > 0 ? 25 : -25,
                                     z: -300,
-                                    x: diff * (baseWidth * 0.4)
+                                    x: diff * (baseWidth * 0.45)
                                 }}
                                 animate={{
-                                    opacity: isCenter ? 1 : 0.5,
-                                    scale: isCenter ? 1 : 0.75,
-                                    rotateY: diff * -12,
-                                    z: isCenter ? 0 : -500,
-                                    x: diff * (baseWidth * 0.35),
-                                    filter: isCenter ? 'brightness(1)' : 'brightness(0.3) blur(4px)',
+                                    opacity: isCenter ? 1 : 0.6,
+                                    scale: isCenter ? 1 : 0.8,
+                                    rotateY: diff * -10,
+                                    z: isCenter ? 0 : -400,
+                                    x: diff * (baseWidth * 0.4),
+                                    filter: isCenter ? 'brightness(1)' : 'brightness(0.4)', // Removed blur for performance
                                 }}
                                 exit={{
                                     opacity: 0,
-                                    scale: 0.3,
-                                    z: -800,
-                                    x: diff > 0 ? 1000 : -1000
+                                    scale: 0.5,
+                                    z: -600,
+                                    transition: { duration: 0.4 }
                                 }}
                                 transition={{
-                                    duration: 1.2,
-                                    ease: [0.16, 1, 0.3, 1]
+                                    duration: 0.7, // Faster transition for snake-like feel
+                                    ease: "easeOut"
                                 }}
                                 style={{
                                     width: baseWidth,
-                                    maxWidth: '90vw',
+                                    maxWidth: '85vw',
                                     height: '100%',
                                     position: 'absolute',
                                     zIndex: 10 - Math.abs(diff),
                                 }}
-                                className="rounded-3xl overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.7)] cursor-pointer border border-white/5"
+                                className="rounded-3xl overflow-hidden shadow-2xl cursor-pointer border border-white/10 will-change-transform"
                                 onClick={() => setCurrentIdx(index)}
                             >
-                                <img
+                                <Image
                                     src={img}
                                     alt={`Slide ${index}`}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes={`${baseWidth}px`}
+                                    priority={isCenter}
                                 />
 
-                                {/* Subtle Reflection/Gradient for depth */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                             </motion.div>
                         );
                     })}
                 </AnimatePresence>
             </div>
+
 
             {/* Navigation Indicators */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-30">
