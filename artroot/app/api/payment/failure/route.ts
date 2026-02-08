@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
+import { cancelOrder } from '@/lib/services/orderService';
 
 export async function POST(req: NextRequest) {
     try {
@@ -17,6 +18,16 @@ export async function POST(req: NextRequest) {
             SET status = 'failed', error_message = $1, updated_at = CURRENT_TIMESTAMP
             WHERE transaction_id = $2
         `, [error_Message || 'Payment failed', txnid]);
+
+        // Restock inventory and cancel order
+        if (orderId) {
+            try {
+                await cancelOrder(parseInt(orderId));
+                logger.info('API', 'Order restocked after payment failure', { orderId, txnid });
+            } catch (err: any) {
+                logger.error('API', 'Failed to restock order after failure', { orderId, error: err.message });
+            }
+        }
 
         logger.warn('API', 'Payment failed', { txnid, orderId, error: error_Message });
 
