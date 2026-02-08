@@ -32,12 +32,13 @@ export default function Footer() {
                     <h4 className="font-sans text-[#C9A24D] text-xs uppercase tracking-widest">Support</h4>
                     <ul className="space-y-4 font-sans text-sm text-[#E6E1DC]/80">
                         <li><Link href="/about" className="hover:text-[#D2691E] transition-colors">About Us</Link></li>
+                        <li><Link href="/contact" className="hover:text-[#D2691E] transition-colors">Contact Us</Link></li>
                         <li>
                             <button
                                 onClick={() => window.dispatchEvent(new CustomEvent('open-chat'))}
-                                className="hover:text-[#D2691E] transition-colors"
+                                className="hover:text-[#D2691E] transition-colors text-left"
                             >
-                                Contact
+                                Live Support
                             </button>
                         </li>
                         <li><Link href="/shipping" className="hover:text-[#D2691E] transition-colors">Shipping & Returns</Link></li>
