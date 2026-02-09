@@ -10,10 +10,11 @@ export async function GET(req: NextRequest) {
             ADD COLUMN IF NOT EXISTS stock_quantity INTEGER DEFAULT 1;
         `);
 
-        // Update existing artworks to have stock for testing
+        // Update existing artworks to have stock ONLY if they are at 0 or NULL
         await query(`
             UPDATE artworks 
-            SET stock_quantity = 10, is_available = true;
+            SET stock_quantity = 1, is_available = true
+            WHERE stock_quantity IS NULL OR stock_quantity = 0;
         `);
 
         logger.info('DATABASE', 'Migration: Added stock_quantity to artworks');

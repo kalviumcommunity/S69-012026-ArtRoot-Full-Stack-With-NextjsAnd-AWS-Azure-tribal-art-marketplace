@@ -39,15 +39,16 @@ const heroImages = [
 
 export default function Home() {
   const router = useRouter();
+  const [session, setSession] = useState<any>(null);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = getUserSession();
-    if (session) {
-      // Optional: Redirect or just show home
+    const userSession = getUserSession();
+    if (userSession) {
+      setSession(userSession);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -92,9 +93,9 @@ export default function Home() {
         {/* Background Texture/glow */}
         <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(210,105,30,0.15)_0%,transparent_70%)]" />
 
-        {/* Carousel Container - Full Landscape Viewport */}
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div style={{ height: '70vh', width: '90vw', position: 'relative' }}>
+        {/* Carousel Container - Responsive Viewport */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="h-[50vh] md:h-[70vh] w-full md:w-[90vw] relative pointer-events-auto">
             <Carousel
               images={heroImages}
               baseWidth={1000}
@@ -107,7 +108,7 @@ export default function Home() {
         </div>
 
         {/* Abstract Background Shapes */}
-        <div className="absolute top-20 right-[-10%] w-[600px] h-[600px] bg-[#C9A24D]/10 rounded-full blur-[100px] z-10" />
+        <div className="absolute top-20 right-[-10%] w-[600px] h-[600px] bg-[#C9A24D]/10 rounded-full blur-[100px] z-0" />
 
         <div className="max-w-7xl mx-auto w-full relative z-20">
           <motion.div
@@ -116,7 +117,7 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             className="space-y-8 max-w-2xl"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/10">
               <div className="w-2 h-2 rounded-full bg-[#D2691E] animate-pulse" />
               <span className="text-xs font-sans uppercase tracking-[0.2em] text-white/90">Curated Tribal Artifacts</span>
             </div>
@@ -128,7 +129,7 @@ export default function Home() {
               Art.
             </h1>
 
-            <p className="font-sans text-xl text-white/90 max-w-md leading-relaxed border-l-2 border-[#D2691E] pl-8 backdrop-blur-[1px]">
+            <p className="font-sans text-xl text-white/90 max-w-md leading-relaxed border-l-2 border-[#D2691E] pl-8">
               Experience the unadulterated beauty of indigenous Indian art. Directly sourced from the hands that tell the oldest stories.
             </p>
 
@@ -225,9 +226,15 @@ export default function Home() {
         <h2 className="font-serif text-5xl md:text-7xl text-[#2B2B2B] mb-8">
           Own a piece of <br /> <span className="italic text-[#D2691E]">History.</span>
         </h2>
-        <Link href="/signup" className="inline-block px-12 py-5 bg-[#D2691E] text-white font-sans uppercase text-sm tracking-widest rounded-full hover:bg-[#b05516] transition-colors">
-          Join the Application
-        </Link>
+        {session ? (
+          <Link href="/dashboard" className="inline-block px-12 py-5 bg-[#D2691E] text-white font-sans uppercase text-sm tracking-widest rounded-full hover:bg-[#b05516] transition-colors">
+            Go to Dashboard
+          </Link>
+        ) : (
+          <Link href="/signup" className="inline-block px-12 py-5 bg-[#D2691E] text-white font-sans uppercase text-sm tracking-widest rounded-full hover:bg-[#b05516] transition-colors">
+            Join the Application
+          </Link>
+        )}
       </section>
 
       <Footer />

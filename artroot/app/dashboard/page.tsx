@@ -330,6 +330,45 @@ function DashboardContent() {
     }
   };
 
+  const handleRefillStock = async (artworkId: number, currentStock: number) => {
+    const amount = prompt(`How many items would you like to add to stock? (Current: ${currentStock})`, "5");
+    if (amount === null) return;
+
+    const refillCount = parseInt(amount);
+    if (isNaN(refillCount) || refillCount <= 0) {
+      alert("Please enter a valid positive number.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/artworks/${artworkId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          stockQuantity: currentStock + refillCount,
+          isAvailable: true
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`Successfully added ${refillCount} items to stock!`);
+        fetchData();
+      } else {
+        throw new Error(data.error || 'Failed to refill stock');
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!session) {
     return null;
   }
@@ -599,16 +638,31 @@ function DashboardContent() {
                               <div className="p-4">
                                 <h3 className="font-bold text-gray-900">{artwork.title}</h3>
                                 <p className="text-sm text-gray-600">{artwork.tribe} • {artwork.medium}</p>
-                                <p className="text-lg font-bold text-amber-600 mt-2">
-                                  ₹{Number(artwork.price).toLocaleString()}
-                                </p>
-                                <button
-                                  onClick={() => handleDeleteArtwork(artwork.id, artwork.title)}
-                                  className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors border border-red-200"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete Artwork
-                                </button>
+                                <div className="mt-2 text-xs font-semibold flex items-center gap-2">
+                                  <span className={Number(artwork.stock_quantity) > 0 ? 'text-green-600' : 'text-red-600'}>
+                                    Stock: {artwork.stock_quantity || 0}
+                                  </span>
+                                  <button
+                                    onClick={() => handleRefillStock(artwork.id, Number(artwork.stock_quantity || 0))}
+                                    className="text-amber-600 hover:text-amber-700 underline flex items-center gap-1"
+                                  >
+                                    Refill
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-4">
+                                  <button
+                                    onClick={() => router.push(`/dashboard/edit/${artwork.id}`)}
+                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-600 font-medium rounded-lg transition-colors border border-amber-200"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteArtwork(artwork.id, artwork.title)}
+                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors border border-red-200"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           ))}

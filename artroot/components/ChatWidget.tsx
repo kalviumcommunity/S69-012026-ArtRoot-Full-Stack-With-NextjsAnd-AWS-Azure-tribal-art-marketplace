@@ -13,8 +13,13 @@ export default function ChatWidget() {
     const [conversationId, setConversationId] = useState<number | null>(null);
 
     useEffect(() => {
-        const s = getUserSession();
-        setSession(s);
+        const updateSession = () => {
+            const s = getUserSession();
+            setSession(s);
+        };
+        updateSession();
+        window.addEventListener('auth-change', updateSession);
+        return () => window.removeEventListener('auth-change', updateSession);
     }, []);
 
     useEffect(() => {
@@ -29,6 +34,23 @@ export default function ChatWidget() {
         window.addEventListener('open-chat', handleOpenChat);
         return () => window.removeEventListener('open-chat', handleOpenChat);
     }, []);
+
+    useEffect(() => {
+        let interval: any;
+        if (isOpen) {
+            fetchMessages();
+            interval = setInterval(fetchMessages, 5000); // Poll every 5 seconds
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            scrollToBottom();
+        }
+    }, [messages]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

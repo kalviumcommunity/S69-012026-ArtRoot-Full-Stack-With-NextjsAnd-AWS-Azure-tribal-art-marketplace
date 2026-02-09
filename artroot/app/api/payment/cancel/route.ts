@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { query } from '@/lib/db';
+import { cancelOrder } from '@/lib/services/orderService';
 
 export async function POST(req: NextRequest) {
     try {
@@ -15,6 +16,16 @@ export async function POST(req: NextRequest) {
             SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
             WHERE transaction_id = $1
         `, [txnid]);
+
+        // Restock inventory and cancel order
+        if (orderId) {
+            try {
+                await cancelOrder(parseInt(orderId));
+                logger.info('API', 'Order restocked after payment cancellation', { orderId, txnid });
+            } catch (err: any) {
+                logger.error('API', 'Failed to restock order after cancellation', { orderId, error: err.message });
+            }
+        }
 
         logger.info('API', 'Payment cancelled by user', { txnid, orderId });
 

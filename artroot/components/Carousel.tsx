@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface CarouselProps {
     images: string[];
@@ -13,7 +14,7 @@ interface CarouselProps {
 
 export default function Carousel({
     images,
-    baseWidth = 400,
+    baseWidth: propBaseWidth = 400,
     autoplay = true,
     autoplayDelay = 4000,
     pauseOnHover = true,
@@ -21,6 +22,16 @@ export default function Carousel({
 }: CarouselProps) {
     const [currentIdx, setCurrentIdx] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = windowWidth < 768;
+    const baseWidth = isMobile ? windowWidth * 0.85 : propBaseWidth;
 
     useEffect(() => {
         if (autoplay && (!pauseOnHover || !isHovered)) {
@@ -29,43 +40,43 @@ export default function Carousel({
             }, autoplayDelay);
             return () => clearInterval(timer);
         }
-    }, [autoplay, autoplayDelay, pauseOnHover, isHovered, currentIdx]);
+    }, [autoplay, autoplayDelay, pauseOnHover, isHovered, currentIdx, images.length]);
 
     const handleNext = () => {
         if (loop || currentIdx < images.length - 1) {
-            setCurrentIdx((prev) => (prev + 1) % images.length);
+            setCurrentIdx((prev: number) => (prev + 1) % images.length);
         }
     };
 
     const handlePrev = () => {
         if (loop || currentIdx > 0) {
-            setCurrentIdx((prev) => (prev - 1 + images.length) % images.length);
+            setCurrentIdx((prev: number) => (prev - 1 + images.length) % images.length);
         }
     };
 
     return (
         <div
-            className="relative w-full h-full flex items-center justify-center overflow-visible"
+            className="relative w-full h-full flex items-center justify-center"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{ perspective: '1200px' }}
+            style={{ perspective: '1000px' }}
         >
-            <div className="relative w-full h-full flex items-center justify-center">
-                <AnimatePresence mode="popLayout">
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                <AnimatePresence mode="popLayout" initial={false}>
                     {images.map((img, index) => {
-                        // Calculate distance from current index
                         let diff = index - currentIdx;
 
-                        // Handle looping logic for distance
                         if (loop) {
                             if (diff > images.length / 2) diff -= images.length;
                             if (diff < -images.length / 2) diff += images.length;
                         }
 
                         const isCenter = diff === 0;
-                        const isVisible = Math.abs(diff) <= 2; // Only show 5 items max
+                        const isVisible = Math.abs(diff) <= 2;
 
                         if (!isVisible) return null;
+
+                        const spacing = isMobile ? baseWidth * 0.6 : baseWidth * 0.4;
 
                         return (
                             <motion.div
@@ -73,59 +84,61 @@ export default function Carousel({
                                 initial={{
                                     opacity: 0,
                                     scale: 0.8,
-                                    rotateY: diff > 0 ? 30 : -30,
+                                    rotateY: diff > 0 ? 25 : -25,
                                     z: -300,
-                                    x: diff * (baseWidth * 0.4)
+                                    x: diff * spacing * 1.2
                                 }}
                                 animate={{
-                                    opacity: isCenter ? 1 : 0.5,
-                                    scale: isCenter ? 1 : 0.75,
-                                    rotateY: diff * -12,
-                                    z: isCenter ? 0 : -500,
-                                    x: diff * (baseWidth * 0.35),
-                                    filter: isCenter ? 'brightness(1)' : 'brightness(0.3) blur(4px)',
+                                    opacity: isCenter ? 1 : 0.6,
+                                    scale: isCenter ? 1 : 0.8,
+                                    rotateY: diff * (isMobile ? -8 : -10),
+                                    z: isCenter ? 0 : -400,
+                                    x: diff * spacing,
+                                    filter: isCenter ? 'brightness(1)' : 'brightness(0.4)',
                                 }}
                                 exit={{
                                     opacity: 0,
-                                    scale: 0.3,
-                                    z: -800,
-                                    x: diff > 0 ? 1000 : -1000
+                                    scale: 0.5,
+                                    z: -600,
+                                    transition: { duration: 0.4 }
                                 }}
                                 transition={{
-                                    duration: 1.2,
-                                    ease: [0.16, 1, 0.3, 1]
+                                    duration: 0.7,
+                                    ease: "easeOut"
                                 }}
                                 style={{
                                     width: baseWidth,
-                                    maxWidth: '90vw',
-                                    height: '100%',
+                                    height: isMobile ? '70%' : '100%',
                                     position: 'absolute',
                                     zIndex: 10 - Math.abs(diff),
                                 }}
-                                className="rounded-3xl overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.7)] cursor-pointer border border-white/5"
+                                className="rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl cursor-pointer border border-white/10 will-change-transform"
                                 onClick={() => setCurrentIdx(index)}
                             >
-                                <img
+                                <Image
                                     src={img}
                                     alt={`Slide ${index}`}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes={`${baseWidth}px`}
+                                    priority={isCenter}
                                 />
 
-                                {/* Subtle Reflection/Gradient for depth */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                             </motion.div>
                         );
                     })}
                 </AnimatePresence>
             </div>
 
+
             {/* Navigation Indicators */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-30">
+            <div className="absolute bottom-4 md:bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-30">
                 {images.map((_, i) => (
                     <button
                         key={i}
                         onClick={() => setCurrentIdx(i)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentIdx ? 'bg-[#D2691E] w-8' : 'bg-white/30'
+                        className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${i === currentIdx ? 'bg-[#D2691E] w-6 md:w-8' : 'bg-white/30'
                             }`}
                     />
                 ))}

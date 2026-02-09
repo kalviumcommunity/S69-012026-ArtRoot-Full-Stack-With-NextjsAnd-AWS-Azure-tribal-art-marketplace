@@ -21,7 +21,8 @@ export default function EditArtworkPage() {
         tribe: '',
         medium: '',
         size: '',
-        imageUrl: ''
+        imageUrl: '',
+        stockQuantity: 1
     });
 
     const tribes = ['Warli', 'Gond', 'Madhubani', 'Pattachitra', 'Tribal', 'Other'];
@@ -42,7 +43,8 @@ export default function EditArtworkPage() {
                         tribe: artwork.tribe,
                         medium: artwork.medium,
                         size: artwork.size || '',
-                        imageUrl: artwork.image_url || ''
+                        imageUrl: artwork.image_url || '',
+                        stockQuantity: artwork.stock_quantity || 1
                     });
                 } else {
                     alert('Artwork not found');
@@ -85,7 +87,8 @@ export default function EditArtworkPage() {
                     medium: formData.medium,
                     isAvailable: true,
                     size: formData.size,
-                    imageUrl: formData.imageUrl || null
+                    imageUrl: formData.imageUrl || null,
+                    stockQuantity: parseInt(formData.stockQuantity.toString())
                 })
             });
 
@@ -178,6 +181,10 @@ export default function EditArtworkPage() {
                                 <div>
                                     <label className="block text-sm font-serif text-[#2B2B2B] mb-2">Size</label>
                                     <input type="text" name="size" value={formData.size} onChange={handleInputChange} className="w-full bg-transparent border-b border-[#2B2B2B]/20 py-3 focus:outline-none focus:border-[#D2691E] font-sans text-lg" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-serif text-[#2B2B2B] mb-2">Stock Quantity</label>
+                                    <input type="number" name="stockQuantity" value={formData.stockQuantity} onChange={handleInputChange} className="w-full bg-transparent border-b border-[#2B2B2B]/20 py-3 focus:outline-none focus:border-[#D2691E] font-sans text-lg" min="0" required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-serif text-[#2B2B2B] mb-2">Tribe / Style</label>
