@@ -39,15 +39,16 @@ const heroImages = [
 
 export default function Home() {
   const router = useRouter();
+  const [session, setSession] = useState<any>(null);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = getUserSession();
-    if (session) {
-      // Optional: Redirect or just show home
+    const userSession = getUserSession();
+    if (userSession) {
+      setSession(userSession);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -225,9 +226,15 @@ export default function Home() {
         <h2 className="font-serif text-5xl md:text-7xl text-[#2B2B2B] mb-8">
           Own a piece of <br /> <span className="italic text-[#D2691E]">History.</span>
         </h2>
-        <Link href="/signup" className="inline-block px-12 py-5 bg-[#D2691E] text-white font-sans uppercase text-sm tracking-widest rounded-full hover:bg-[#b05516] transition-colors">
-          Join the Application
-        </Link>
+        {session ? (
+          <Link href="/dashboard" className="inline-block px-12 py-5 bg-[#D2691E] text-white font-sans uppercase text-sm tracking-widest rounded-full hover:bg-[#b05516] transition-colors">
+            Go to Dashboard
+          </Link>
+        ) : (
+          <Link href="/signup" className="inline-block px-12 py-5 bg-[#D2691E] text-white font-sans uppercase text-sm tracking-widest rounded-full hover:bg-[#b05516] transition-colors">
+            Join the Application
+          </Link>
+        )}
       </section>
 
       <Footer />
