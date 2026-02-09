@@ -108,7 +108,7 @@ export default function Home() {
         </div>
 
         {/* Abstract Background Shapes */}
-        <div className="absolute top-20 right-[-10%] w-[600px] h-[600px] bg-[#C9A24D]/10 rounded-full blur-[100px] z-10" />
+        <div className="absolute top-20 right-[-10%] w-[600px] h-[600px] bg-[#C9A24D]/10 rounded-full blur-[100px] z-0" />
 
         <div className="max-w-7xl mx-auto w-full relative z-20">
           <motion.div
@@ -117,7 +117,7 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             className="space-y-8 max-w-2xl"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/10">
               <div className="w-2 h-2 rounded-full bg-[#D2691E] animate-pulse" />
               <span className="text-xs font-sans uppercase tracking-[0.2em] text-white/90">Curated Tribal Artifacts</span>
             </div>
@@ -129,7 +129,7 @@ export default function Home() {
               Art.
             </h1>
 
-            <p className="font-sans text-xl text-white/90 max-w-md leading-relaxed border-l-2 border-[#D2691E] pl-8 backdrop-blur-[1px]">
+            <p className="font-sans text-xl text-white/90 max-w-md leading-relaxed border-l-2 border-[#D2691E] pl-8">
               Experience the unadulterated beauty of indigenous Indian art. Directly sourced from the hands that tell the oldest stories.
             </p>
 

@@ -72,11 +72,10 @@ export default function Carousel({
                         }
 
                         const isCenter = diff === 0;
-                        const isVisible = Math.abs(diff) <= (isMobile ? 1 : 2);
+                        const isVisible = Math.abs(diff) <= 2;
 
                         if (!isVisible) return null;
 
-                        // Calculate spacing based on device
                         const spacing = isMobile ? baseWidth * 0.6 : baseWidth * 0.4;
 
                         return (
@@ -109,7 +108,7 @@ export default function Carousel({
                                 }}
                                 style={{
                                     width: baseWidth,
-                                    height: isMobile ? '70%' : '100%', // Adjust height on mobile to keep ratio
+                                    height: isMobile ? '70%' : '100%',
                                     position: 'absolute',
                                     zIndex: 10 - Math.abs(diff),
                                 }}
